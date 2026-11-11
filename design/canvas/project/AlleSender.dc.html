@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Tuner – Alle Sender</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 360px; height: 600px; box-sizing: border-box; background: #F5F5F7; color: #1D1D1F; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, system-ui, sans-serif; font-size: 13px; display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; border: 1px solid #E0E0E5">
+  <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: #FFFFFF; border-bottom: 1px solid #E0E0E5">
+    <div style="width: 48px; height: 48px; border-radius: 10px; background: #BAD8D1; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px">r1</div>
+    <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+      <div style="font-weight: 600; font-size: 14px">radioeins</div>
+      <div style="color: #5F5F66; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Nils Frahm – Says</div>
+    </div>
+    <button aria-label="Pause" style="width: 40px; height: 40px; border-radius: 20px; border: none; background: #BAD8D1; color: #1D1D1F; display: flex; align-items: center; justify-content: center">
+      <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor"></rect><rect x="9.5" y="2" width="3.5" height="12" rx="1" fill="currentColor"></rect></svg>
+    </button>
+    <button aria-label="Einstellungen" style="width: 28px; height: 28px; border: none; border-radius: 6px; background: transparent; color: #5F5F66; display: flex; align-items: center; justify-content: center">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg>
+    </button>
+  </div>
+  <div style="padding: 12px 12px 8px">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: #E3E3E8; border-radius: 8px; padding: 2px">
+      <button aria-pressed="false" style="height: 26px; border: none; border-radius: 6px; background: transparent; font: inherit; color: #1D1D1F">Favoriten</button>
+      <button aria-pressed="true" style="height: 26px; border: none; border-radius: 6px; background: #FFFFFF; font: inherit; font-weight: 600; color: #1D1D1F; box-shadow: 0 1px 2px rgba(0,0,0,0.12)">Alle Sender</button>
+    </div>
+  </div>
+  <div style="display: flex; gap: 6px; align-items: center; padding: 0 12px 8px">
+    <label for="q" style="flex-grow: 1; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 7px; background: #FFFFFF; border: 1px solid #D2D2D7">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F5F66" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+      <input id="q" type="search" value="jazz" aria-label="Sender suchen" style="border: none; outline: none; font: inherit; width: 100%; background: transparent; color: #1D1D1F">
+    </label>
+    <button aria-label="Länder filtern" style="height: 28px; padding: 0 8px; border-radius: 7px; border: 1px solid #D2D2D7; background: #FFFFFF; font: inherit; color: #1D1D1F; display: flex; align-items: center; gap: 4px">DE, AT<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+    <button aria-label="Eigenen Stream-Link hinzufügen" style="width: 28px; height: 28px; border-radius: 7px; border: 1px solid #D2D2D7; background: #FFFFFF; color: #1D1D1F; display: flex; align-items: center; justify-content: center">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+    </button>
+  </div>
+  <div style="padding: 0 20px 4px; font-size: 11px; color: #5F5F66">38 Sender · sortiert nach Beliebtheit</div>
+  <div style="flex-grow: 1; display: flex; flex-direction: column; padding: 0 6px; overflow: hidden">
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+      <div style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px; border-radius: 7px">
+        <span style="width: 28px; height: 28px; border-radius: 6px; background: #E3E3E8; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 10px">{{r.ini}}</span>
+        <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+          <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span>
+          <span style="font-size: 11px; color: #5F5F66">{{r.meta}}</span>
+        </div>
+        <button aria-label="{{r.label}}" style="width: 24px; height: 24px; border: none; background: transparent; color: {{r.starColor}}; display: flex; align-items: center; justify-content: center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="{{r.starFill}}" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.2L12 17.4l-5.6 2.9 1.1-6.2L3 9.7l6.2-.9z"></path></svg>
+        </button>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":600}}'>
+class Component extends DCLogic {
+renderVals() {
+const rows = [
+  ['NB', 'NDR Blue', 'Deutschland · Jazz · 128 kbit/s', false],
+  ['BR', 'BR Klassik Jazz', 'Deutschland · Jazz · 96 kbit/s', true],
+  ['Ö1', 'Ö1 Jazz', 'Österreich · Jazz · 192 kbit/s', false],
+  ['JR', 'Jazzradio Berlin', 'Deutschland · Jazz · 128 kbit/s', false],
+  ['SJ', 'SWR Jazz', 'Deutschland · Jazz · 128 kbit/s', false],
+  ['FM', 'FM4 Soundpark', 'Österreich · Alternative · 128 kbit/s', false],
+  ['WJ', 'WDR Jazz', 'Deutschland · Jazz · 128 kbit/s', false],
+  ['RJ', 'Radio Jazz Wien', 'Österreich · Jazz · 64 kbit/s', false]
+];
+return { rows: rows.map(([ini, name, meta, fav]) => ({
+  ini, name, meta,
+  starFill: fav ? '#6DB6A5' : 'none',
+  starColor: fav ? '#2F7A6A' : '#5F5F66',
+  label: fav ? name + ' aus Favoriten entfernen' : name + ' zu Favoriten'
+})) };
+}
+}
+</script>
+</body>
+</html>

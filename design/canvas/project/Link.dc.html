@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Tuner – Eigenen Link hinzufügen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 360px; height: 600px; box-sizing: border-box; background: #D9D9DE; color: #1D1D1F; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, system-ui, sans-serif; font-size: 13px; display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; border: 1px solid #E0E0E5; padding: 0 12px">
+  <form style="margin-top: 76px; display: flex; flex-direction: column; gap: 14px; padding: 18px; background: #FFFFFF; border-radius: 0 0 12px 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.18)">
+    <h2 style="margin: 0; font-size: 15px; font-weight: 600">Sender hinzufügen</h2>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <label for="url" style="font-weight: 600; font-size: 12px">Stream-Link</label>
+      <input id="url" type="url" value="https://stream.example.org/live.mp3" style="height: 28px; padding: 0 8px; border-radius: 6px; border: 2px solid #6DB6A5; font: inherit; color: #1D1D1F; outline: none">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #2F6B5E">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>
+        Stream erreichbar · MP3, 128 kbit/s · sendet Titel
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <label for="name" style="font-weight: 600; font-size: 12px">Name</label>
+      <input id="name" type="text" value="Mein Lieblingssender" style="height: 28px; padding: 0 8px; border-radius: 6px; border: 1px solid #DADADF; font: inherit; color: #1D1D1F">
+      <div style="font-size: 11px; color: #5F5F66">Vom Stream übernommen, du kannst ihn ändern.</div>
+    </div>
+    <label style="display: flex; align-items: center; gap: 8px">
+      <input type="checkbox" checked style="width: 16px; height: 16px; accent-color: #2F6B5E">
+      Zu Favoriten hinzufügen
+    </label>
+    <div style="display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px">
+      <button type="button" style="height: 28px; padding: 0 14px; border-radius: 6px; border: 1px solid #DADADF; background: #FFFFFF; font: inherit; color: #1D1D1F">Abbrechen</button>
+      <button type="submit" style="height: 28px; padding: 0 14px; border-radius: 6px; border: none; background: #BAD8D1; font: inherit; font-weight: 600; color: #1D1D1F">Hinzufügen</button>
+    </div>
+  </form>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":600}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

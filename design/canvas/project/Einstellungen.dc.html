@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Tuner – Einstellungen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 560px; height: 820px; box-sizing: border-box; background: #ECECEE; color: #1D1D1F; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, system-ui, sans-serif; font-size: 13px; display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; border: 1px solid #D2D2D7">
+  <div style="height: 40px; display: flex; align-items: center; padding: 0 14px; gap: 8px; background: #F5F5F7; border-bottom: 1px solid #E0E0E5">
+    <span style="width: 12px; height: 12px; border-radius: 6px; background: #FF5F57"></span>
+    <span style="width: 12px; height: 12px; border-radius: 6px; background: #DADADF"></span>
+    <span style="width: 12px; height: 12px; border-radius: 6px; background: #DADADF"></span>
+    <span style="flex-grow: 1; text-align: center; font-weight: 600; margin-right: 52px">Einstellungen</span>
+  </div>
+  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 18px; padding: 20px 24px">
+    <section style="display: flex; flex-direction: column; gap: 6px">
+      <h2 style="margin: 0 0 0 10px; font-size: 13px; font-weight: 600">Nachrichten</h2>
+      <div style="background: #FFFFFF; border-radius: 10px; border: 1px solid #E0E0E5; display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #F0F0F2">
+          <span style="flex-grow: 1">Nachrichten-Umschaltung</span>
+          <button role="switch" aria-checked="true" aria-label="Nachrichten-Umschaltung" style="width: 38px; height: 22px; border-radius: 11px; border: none; padding: 2px; background: #6DB6A5; display: flex; justify-content: flex-end"><span style="width: 18px; height: 18px; border-radius: 9px; background: #FFFFFF; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.25)"></span></button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #F0F0F2">
+          <label for="sender" style="flex-grow: 1">Nachrichtensender</label>
+          <span style="position: relative; display: inline-flex">
+            <select id="sender" style="appearance: none; -webkit-appearance: none; height: 28px; padding: 0 28px 0 10px; border-radius: 6px; border: 1px solid #DADADF; background: #FFFFFF; font: inherit; color: #1D1D1F"><option>Deutschlandfunk</option></select>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5F5F66" stroke-width="2.5" aria-hidden="true" style="position: absolute; right: 10px; top: 9px; pointer-events: none"><path d="M6 9l6 6 6-6"></path></svg>
+          </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #F0F0F2">
+          <label for="erk" style="flex-grow: 1">Erkennung</label>
+          <span style="position: relative; display: inline-flex">
+            <select id="erk" style="appearance: none; -webkit-appearance: none; height: 28px; padding: 0 28px 0 10px; border-radius: 6px; border: 1px solid #DADADF; background: #FFFFFF; font: inherit; color: #1D1D1F"><option>Sendungstitel, sonst Zeitplan</option><option>Nur Zeitplan</option></select>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5F5F66" stroke-width="2.5" aria-hidden="true" style="position: absolute; right: 10px; top: 9px; pointer-events: none"><path d="M6 9l6 6 6-6"></path></svg>
+          </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px">
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+            <label for="plan">Zeitplan</label>
+            <span style="font-size: 11px; color: #5F5F66">Gilt, wenn der Sender keinen Sendungstitel mitschickt.</span>
+          </div>
+          <span style="position: relative; display: inline-flex">
+            <select id="plan" style="appearance: none; -webkit-appearance: none; height: 28px; padding: 0 28px 0 10px; border-radius: 6px; border: 1px solid #DADADF; background: #FFFFFF; font: inherit; color: #1D1D1F"><option>Jede volle Stunde</option><option>Volle und halbe Stunde</option></select>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5F5F66" stroke-width="2.5" aria-hidden="true" style="position: absolute; right: 10px; top: 9px; pointer-events: none"><path d="M6 9l6 6 6-6"></path></svg>
+          </span>
+          <span style="position: relative; display: inline-flex">
+            <select aria-label="Dauer" style="appearance: none; -webkit-appearance: none; height: 28px; padding: 0 28px 0 10px; border-radius: 6px; border: 1px solid #DADADF; background: #FFFFFF; font: inherit; color: #1D1D1F"><option>5 Min.</option><option>3 Min.</option><option>10 Min.</option></select>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5F5F66" stroke-width="2.5" aria-hidden="true" style="position: absolute; right: 10px; top: 9px; pointer-events: none"><path d="M6 9l6 6 6-6"></path></svg>
+          </span>
+        </div>
+      </div>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 6px">
+      <h2 style="margin: 0 0 0 10px; font-size: 13px; font-weight: 600">Senderliste</h2>
+      <div style="background: #FFFFFF; border-radius: 10px; border: 1px solid #E0E0E5; display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; flex-wrap: wrap">
+          <span style="flex-grow: 1">Länder anzeigen</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center">
+            <span style="background: #E2EEEB; border-radius: 6px; padding: 3px 8px">Deutschland</span>
+            <span style="background: #E2EEEB; border-radius: 6px; padding: 3px 8px">Österreich</span>
+            <span style="background: #E2EEEB; border-radius: 6px; padding: 3px 8px">Schweiz</span>
+            <button aria-label="Land hinzufügen" style="width: 24px; height: 24px; border-radius: 6px; border: 1px solid #DADADF; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 6px">
+      <h2 style="margin: 0 0 0 10px; font-size: 13px; font-weight: 600">Allgemein</h2>
+      <div style="background: #FFFFFF; border-radius: 10px; border: 1px solid #E0E0E5; display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #F0F0F2">
+          <span style="flex-grow: 1">Beim Anmelden starten</span>
+          <button role="switch" aria-checked="true" aria-label="Beim Anmelden starten" style="width: 38px; height: 22px; border-radius: 11px; border: none; padding: 2px; background: #6DB6A5; display: flex; justify-content: flex-end"><span style="width: 18px; height: 18px; border-radius: 9px; background: #FFFFFF; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.25)"></span></button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px">
+          <span style="flex-grow: 1">Automatisch nach Updates suchen</span>
+          <button role="switch" aria-checked="true" aria-label="Automatisch nach Updates suchen" style="width: 38px; height: 22px; border-radius: 11px; border: none; padding: 2px; background: #6DB6A5; display: flex; justify-content: flex-end"><span style="width: 18px; height: 18px; border-radius: 9px; background: #FFFFFF; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.25)"></span></button>
+        </div>
+      </div>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 6px">
+      <h2 style="margin: 0 0 0 10px; font-size: 13px; font-weight: 600">Support</h2>
+      <div style="background: #FFFFFF; border-radius: 10px; border: 1px solid #E0E0E5; display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #F0F0F2">
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+            <span>Selbsttest</span>
+            <span style="font-size: 11px; color: #5F5F66">Prüft alle Funktionen mit eigenen Testdaten und sendet einen anonymen Bericht.</span>
+          </div>
+          <button style="height: 28px; padding: 0 12px; border-radius: 6px; border: 1px solid #DADADF; background: #FFFFFF; font: inherit; color: #1D1D1F; white-space: nowrap">Selbsttest starten …</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #F0F0F2">
+          <span style="flex-grow: 1">Problem melden</span>
+          <button style="height: 28px; padding: 0 12px; border-radius: 6px; border: 1px solid #DADADF; background: #FFFFFF; font: inherit; color: #1D1D1F">Melden …</button>
+          <button style="height: 28px; padding: 0 12px; border-radius: 6px; border: 1px solid #DADADF; background: #FFFFFF; font: inherit; color: #1D1D1F">Protokoll zeigen</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px">
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+            <span>Gefällt dir Tuner?</span>
+            <span style="font-size: 11px; color: #5F5F66">Wenn du Tuner nutzt und magst, freue ich mich über einen Kaffee.</span>
+          </div>
+          <button style="height: 28px; padding: 0 12px; border-radius: 6px; border: none; background: #BAD8D1; font: inherit; font-weight: 600; color: #1D1D1F; white-space: nowrap">Buy me a coffee</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":560,"height":820}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

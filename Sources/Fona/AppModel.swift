@@ -117,7 +117,10 @@ final class AppModel: ObservableObject {
         player.volume = Float(settings.volume)
         settings.onVolume = { [weak self] v in self?.player.volume = Float(v) }
         if CommandLine.arguments.contains("--mute") { player.volume = 0; settings.onVolume = nil }
-        if settings.resumeOnLaunch, let id = settings.lastStationID, let s = library.station(id) { play(s) }
+        // the last station is ready in the header after a restart – one click on Play (user request 2026-11-12)
+        if let id = settings.lastStationID, let s = library.station(id) {
+            if settings.resumeOnLaunch { play(s) } else { current = s }
+        }
         // developer launch argument: --selftest (runs the self-test, sends the report, quits)
         if CommandLine.arguments.contains("--selftest") {
             selfTestQuits = true

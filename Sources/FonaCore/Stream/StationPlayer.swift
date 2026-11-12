@@ -22,6 +22,30 @@ public final class InProcessDecoder: FrameDecoder, @unchecked Sendable {
     public func stop() { core = nil }
 }
 
+/// Where a station's PCM goes. The programme writes into the player's ring; the news watcher keeps a history
+/// and detects the time signal (PLAN §6.3).
+public protocol PCMSink: AnyObject, Sendable {
+    func write(_ pcm: [Float]) async throws
+    var bufferedSeconds: Double { get }
+    func reset()
+}
+
+/// Ring with back-pressure: waits while the ring is full.
+public final class RingSink: PCMSink, @unchecked Sendable {
+    let ring: PCMRing
+    public init(_ ring: PCMRing) { self.ring = ring }
+    public var bufferedSeconds: Double { ring.fillSeconds }
+    public func reset() { ring.clear() }
+    public func write(_ pcm: [Float]) async throws {
+        var rest = pcm[...]
+        while !rest.isEmpty {
+            let n = ring.write(Array(rest))
+            rest = rest.dropFirst(n)
+            if !rest.isEmpty { try await Task.sleep(nanoseconds: 50_000_000) }
+        }
+    }
+}
+
 /// One station feeding one ring: connect, decode, write, and reconnect after network trouble
 /// (PLAN §5: after 1, 2, 5, 10, 10 s, then give up). Refusals (wrong format, home network, …) are never retried.
 public final class StationPlayer: @unchecked Sendable {
@@ -36,7 +60,7 @@ public final class StationPlayer: @unchecked Sendable {
     public static let defaultRetryDelays: [Double] = [1, 2, 5, 10, 10]
     public static let startBufferSeconds = 1.5
 
-    let ring: PCMRing
+    let sink: PCMSink
     let makeDecoder: @Sendable () -> FrameDecoder
     let opener: Opener
     let retryDelays: [Double]
@@ -44,10 +68,16 @@ public final class StationPlayer: @unchecked Sendable {
     public var onState: (@Sendable (State) -> Void)?
     public var onTitle: (@Sendable (String) -> Void)?
 
-    public init(ring: PCMRing, retryDelays: [Double] = StationPlayer.defaultRetryDelays,
+    public convenience init(ring: PCMRing, retryDelays: [Double] = StationPlayer.defaultRetryDelays,
+                            opener: @escaping Opener = { try await StreamSource.open($0) },
+                            makeDecoder: @escaping @Sendable () -> FrameDecoder) {
+        self.init(sink: RingSink(ring), retryDelays: retryDelays, opener: opener, makeDecoder: makeDecoder)
+    }
+
+    public init(sink: PCMSink, retryDelays: [Double] = StationPlayer.defaultRetryDelays,
                 opener: @escaping Opener = { try await StreamSource.open($0) },
                 makeDecoder: @escaping @Sendable () -> FrameDecoder) {
-        self.ring = ring
+        self.sink = sink
         self.retryDelays = retryDelays
         self.opener = opener
         self.makeDecoder = makeDecoder
@@ -71,7 +101,7 @@ public final class StationPlayer: @unchecked Sendable {
     public func stop() {
         task?.cancel()
         task = nil
-        ring.clear()
+        sink.reset()
     }
 
     func run(_ url: String) async {
@@ -97,9 +127,9 @@ public final class StationPlayer: @unchecked Sendable {
                         startBuffer = min(max(startBuffer, s), 15)
                     case .frames(let d):
                         guard let pcm = decoder.pcm(d) else { throw Rejection.notAudio }
-                        try await write(pcm)
+                        try await sink.write(pcm)
                         gotAudio = true
-                        if buffering, ring.fillSeconds >= startBuffer {
+                        if buffering, sink.bufferedSeconds >= startBuffer {
                             buffering = false
                             attempt = 0
                             onState?(.playing)
@@ -123,16 +153,6 @@ public final class StationPlayer: @unchecked Sendable {
                 onState?(.reconnecting(attempt: attempt))
                 try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             }
-        }
-    }
-
-    /// Back-pressure: waits while the ring is full.
-    func write(_ pcm: [Float]) async throws {
-        var rest = pcm[...]
-        while !rest.isEmpty {
-            let n = ring.write(Array(rest))
-            rest = rest.dropFirst(n)
-            if !rest.isEmpty { try await Task.sleep(nanoseconds: 50_000_000) }
         }
     }
 }

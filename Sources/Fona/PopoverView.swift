@@ -64,7 +64,7 @@ struct NewsHeader: View {
                 Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .semibold)).accessibilityHidden(true)
                 Text(verbatim: L.f(.newsBackTo, model.current?.displayName ?? "")).lineLimit(1)
                 Spacer()
-                Button(L.t(.backNow)) { model.newsActive = false }.buttonStyle(FieldButtonStyle())
+                Button(L.t(.backNow)) { model.backFromNews() }.buttonStyle(FieldButtonStyle())
             }
             .foregroundStyle(Theme.text2)
         }

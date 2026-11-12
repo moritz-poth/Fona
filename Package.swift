@@ -16,6 +16,7 @@ let package = Package(
         .executableTarget(name: "fona-play", dependencies: ["FonaCore"], path: "Sources/fona-play"),
         // developer tool: decodes a local file through FrameGuard + DecoderCore (compare against ffmpeg)
         .executableTarget(name: "fona-decodecheck", dependencies: ["FonaCore"], path: "Sources/fona-decodecheck"),
+        .executableTarget(name: "fona-tonescan", dependencies: ["FonaCore"], path: "Sources/fona-tonescan"),
         .testTarget(name: "FonaCoreTests", dependencies: ["FonaCore"], path: "Tests/FonaCoreTests"),
     ]
 )

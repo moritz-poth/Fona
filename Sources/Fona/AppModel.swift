@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import ServiceManagement
+import Combine
 import FonaCore
 import os
 
@@ -31,7 +32,7 @@ final class AppSettings: ObservableObject {
 
     init() {
         newsEnabled = d.object(forKey: "newsEnabled") as? Bool ?? true
-        newsSchedule = (d.string(forKey: "newsSchedule")).flatMap(Schedule.init(rawValue:)) ?? .hourly
+        newsSchedule = (d.string(forKey: "newsSchedule")).flatMap(Schedule.init(rawValue:)) ?? .hourlyAndHalf  // DLF: half hours from 04:30
         let m = d.object(forKey: "newsMaxMinutes") as? Int ?? 6
         newsMaxMinutes = (3...10).contains(m) ? m : 6
         let region = Locale.current.region?.identifier
@@ -64,6 +65,7 @@ final class AppModel: ObservableObject {
     let player = Player()
     let directory = RadioBrowser()
     lazy var station = StationPlayer(ring: player.program) { DecoderClient() }
+    lazy var news = NewsWatcher(player: player) { DecoderClient() }
 
     @Published var library = LibraryData()
     @Published var notice: String?
@@ -71,7 +73,8 @@ final class AppModel: ObservableObject {
     @Published var current: Station?
     @Published var state: StationPlayer.State = .stopped
     @Published var title = ""
-    @Published var newsActive = false  // P5 drives this; the UI already shows the state
+    @Published var newsActive = false
+    var settingsObserver: AnyCancellable?
 
     @Published var query = "" { didSet { scheduleSearch() } }
     @Published var results: [RadioBrowser.Result] = []
@@ -91,6 +94,13 @@ final class AppModel: ObservableObject {
         try? player.start()
         station.onState = { [weak self] s in Task { @MainActor in self?.show(s) } }
         station.onTitle = { [weak self] t in Task { @MainActor in self?.title = t } }
+        news.onActive = { [weak self] on in self?.newsActive = on }
+        news.log = { log.notice("\($0, privacy: .public)") }
+        applyNewsSettings()
+        news.setEnabled(settings.newsEnabled)
+        settingsObserver = settings.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async { self?.applyNewsSettings() }
+        }
         if CommandLine.arguments.contains("--mute") { player.volume = 0 }
         if settings.resumeOnLaunch, let id = settings.lastStationID, let s = library.station(id) { play(s) }
         // developer launch argument: --play-url <url> (checks without clicking)
@@ -127,10 +137,12 @@ final class AppModel: ObservableObject {
         player.setPlaying(false)
         state = .stopped
         title = ""
+        news.program(playing: false, url: nil)
     }
 
     func show(_ s: StationPlayer.State) {
         state = s
+        news.program(playing: s == .playing, url: current?.url)
         switch s {
         case .playing: player.setPlaying(true)
         case .failed(let r): player.setPlaying(false); log.error("stream failed: \(r.code, privacy: .public)")
@@ -245,7 +257,14 @@ final class AppModel: ObservableObject {
         Task { try? await Task.sleep(nanoseconds: 4_000_000_000); if self.toast == text { self.toast = nil } }
     }
 
-    // MARK: news (display only until P5)
+    // MARK: news
+
+    func applyNewsSettings() {
+        news.configure(halfHours: settings.newsSchedule == .hourlyAndHalf, maxMinutes: settings.newsMaxMinutes)
+        news.setEnabled(settings.newsEnabled)
+    }
+
+    func backFromNews() { news.backNow() }
 
     var nextNewsTime: String {
         let cal = Calendar.current

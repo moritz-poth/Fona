@@ -24,7 +24,7 @@ struct TableResolver: Resolver {
 }
 
 public enum CheckCatalog {
-    public static var all: [Check] { attacks + parsing + content + hls }
+    public static var all: [Check] { attacks + parsing + content + hls + news }
 
     public static func runAll() -> [CheckResult] { all.map { $0.execute() } }
 
@@ -399,6 +399,45 @@ public enum CheckCatalog {
         ]
     }
 
+    // MARK: news switch (PLAN §9.1 point 3)
+
+    static func detections(_ pcm: [Float]) -> [ToneDetector.Detection] {
+        let d = ToneDetector()
+        var out: [ToneDetector.Detection] = []
+        var i = 0
+        while i < pcm.count { let n = min(9600, pcm.count - i); out += d.feed(Array(pcm[i..<i + n])); i += n }
+        return out
+    }
+
+    static var news: [Check] {
+        [
+            Check(id: "news-time-signal", area: "news") {
+                let pcm = TestMedia.music(seconds: 3) + TestMedia.timeSignal() + TestMedia.music(seconds: 3)
+                let d = detections(pcm)
+                guard d.count == 1 else { return "\(d.count) detections" }
+                let start = Double(d[0].toneStartFrame) / DecoderCore.sampleRate
+                return abs(start - 3.0) < 0.15 ? nil : "first pip at \(start) s, expected 3.0"
+            },
+            Check(id: "news-no-false-alarm-music", area: "news") {
+                detections(TestMedia.music(seconds: 30)).isEmpty ? nil : "music triggered"
+            },
+            Check(id: "news-no-false-alarm-noise", area: "news") {
+                let noise = (0..<(48_000 * 10 * 2)).map { i in Float(sin(Double(i) * 12.9898) * 43758.5453).truncatingRemainder(dividingBy: 1) * 0.3 }
+                return detections(noise).isEmpty ? nil : "noise triggered"
+            },
+            Check(id: "news-single-long-tone", area: "news") {
+                let pcm = TestMedia.music(seconds: 2) + TestMedia.sine(780, seconds: 0.8) + TestMedia.music(seconds: 2)
+                return detections(pcm).isEmpty ? nil : "a lone tone without pips triggered"
+            },
+            Check(id: "news-endless-tone", area: "news") {
+                detections(TestMedia.sine(780, seconds: 10)).isEmpty ? nil : "a 10 s tone triggered"
+            },
+            Check(id: "news-title-rule", area: "news") {
+                NewsLogic.isNewsTitle("Nachrichten") && !NewsLogic.isNewsTitle("Nachrichtenleicht") ? nil : "title rule wrong"
+            },
+        ]
+    }
+
     static func randomBytes(_ n: Int, seed: UInt64) -> Data {
         var x = seed, out = [UInt8]()
         out.reserveCapacity(n)
@@ -459,6 +498,32 @@ public enum TestMedia {
             first = false
         }
         return Data(out)
+    }
+
+    /// 48 kHz interleaved stereo sine.
+    public static func sine(_ hz: Double, seconds: Double, level: Float = 0.25) -> [Float] {
+        let n = Int(seconds * 48_000)
+        var out = [Float](repeating: 0, count: n * 2)
+        for i in 0..<n { let v = level * Float(sin(2 * .pi * hz * Double(i) / 48_000)); out[2 * i] = v; out[2 * i + 1] = v }
+        return out
+    }
+    public static func silence(_ seconds: Double) -> [Float] { [Float](repeating: 0, count: Int(seconds * 48_000) * 2) }
+    /// Deutschlandfunk-like time signal: two short pips one second apart, then a long pip, then silence.
+    public static func timeSignal() -> [Float] {
+        sine(780, seconds: 0.15) + silence(0.85) + sine(780, seconds: 0.15) + silence(0.85) + sine(780, seconds: 0.8) + silence(1.5)
+    }
+    /// Chord with changing notes – stands in for music (contains 784 Hz G5 on purpose).
+    public static func music(seconds: Double) -> [Float] {
+        let notes: [[Double]] = [[261.6, 329.6, 392.0], [392.0, 493.9, 784.0], [349.2, 440.0, 523.3], [293.7, 370.0, 784.0]]
+        let n = Int(seconds * 48_000)
+        var out = [Float](repeating: 0, count: n * 2)
+        for i in 0..<n {
+            let chord = notes[(i / 24_000) % notes.count]
+            let t = Double(i) / 48_000
+            let v = Float(chord.reduce(0) { $0 + sin(2 * .pi * $1 * t) } * 0.08)
+            out[2 * i] = v; out[2 * i + 1] = v
+        }
+        return out
     }
 
     public static func tsPackets(_ n: Int) -> Data {

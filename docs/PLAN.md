@@ -429,3 +429,11 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 10. Schalter-Animation folgt „Bewegung reduzieren“.
 - Automatischer Prüflauf des Bedienungsbaums versucht und verworfen: SwiftUI baut ihn erst, wenn ein Hilfsprogramm (VoiceOver) von außen fragt.
 - Offen: Gegenprobe mit echtem VoiceOver (⌘F5) und „Kontrast erhöhen“ durch den Nutzer.
+
+### Rückmeldung Nutzer 2026-11-12 (nach erstem Hören)
+- Umschaltung zu Deutschlandfunk funktioniert, war aber „sehr knapp“ → Wiedergabe beginnt jetzt 1,5 s **vor** dem ersten Piep (`NewsWatcher.leadInSeconds`).
+- Suche: ⓧ zum Löschen. Lautstärkeregler unter dem Senderkopf (gespeichert). Zahnrad auch während der Nachrichten (vorher fehlte es dort → Einstellungen nicht erreichbar).
+- Menüleisten-Symbol: abgerundetes Quadrat mit Kreis und F (Variante A), wie das App-Icon.
+- Einstellungen/Handbuch: Fona wird solange zur normalen App (Dock, ⌘-Tab, Menü „Fona“/„Bearbeiten“ wie Mountpoint: Über Fona, Fona ausblenden, Einstellungen schließen ⌘Q, verstecktes ⌘W; Fenstertitel überall „Fona“). **Kein zweites Programm wie in Mountpoint:** in der Sandbox bekäme es einen eigenen Datenbereich (gemeinsame Daten nur per App Group = Apple-Entwicklerkonto).
+- Fehler gefunden und behoben: Abschnitt „Über Fona“ lag seit P7 außerhalb der Fensterstruktur. Einstellungen scrollen jetzt (560 × 720).
+- Veröffentlichung jetzt immer mit DMG (wie Mountpoint: App neben Programme-Verknüpfung, Titel „FONA“), ZIP + Signatur bleiben für den Updater. README-Kopf wie Mountpoint.

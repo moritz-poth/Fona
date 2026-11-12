@@ -22,6 +22,8 @@ struct SettingsView: View {
     }
 
     var body: some View {
+        ScrollViewReader { proxy in
+        ScrollView {
         VStack(alignment: .leading, spacing: 18) {
                 section(L.t(.newsSection)) {
                     row(L.t(.newsSwitch)) { FonaSwitch(isOn: $settings.newsEnabled, label: L.t(.newsSwitch)) }
@@ -89,7 +91,6 @@ struct SettingsView: View {
                             .buttonStyle(FieldButtonStyle(filled: true))
                     }
                 }
-            }
                 section(L.t(.about)) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(verbatim: "Fona \(AppUpdater.current) · \(L.t(.aboutCopyright))").fontWeight(.semibold)
@@ -106,9 +107,21 @@ struct SettingsView: View {
                     .padding(.horizontal, 14).padding(.vertical, 10)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-            .padding(.horizontal, 24).padding(.vertical, 20)
-        .frame(width: 560)
-        .fixedSize(horizontal: false, vertical: true)  // the window fits its content
+                .id("about")
+        }
+        .padding(.horizontal, 24).padding(.vertical, 20)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .fonaShowAbout)) { _ in
+            withAnimation { proxy.scrollTo("about", anchor: .top) }
+        }
+        .onAppear {
+            if AppWindows.aboutRequested {
+                AppWindows.aboutRequested = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { proxy.scrollTo("about", anchor: .top) }
+            }
+        }
+        }
+        .frame(width: 560, height: 720)  // long page: scrolls; fits a 13" screen
         .background(Theme.bg)
         .foregroundStyle(Theme.text)
         .font(.system(size: 13))

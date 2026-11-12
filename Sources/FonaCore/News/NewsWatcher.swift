@@ -57,6 +57,8 @@ final class NewsSink: PCMSink, @unchecked Sendable {
 @MainActor
 public final class NewsWatcher {
     public static let newsURL = "https://st01.sslstream.dlf.de/dlf/01/128/mp3/stream.mp3"
+    /// Extra seconds replayed before the time signal, so the switch never lands right on the first pip.
+    public static let leadInSeconds = 1.5
 
     let player: Player
     let sink: NewsSink
@@ -109,7 +111,8 @@ public final class NewsWatcher {
             case .stopNewsChain:
                 station.stop()
             case .fadeToNews(let replay):
-                sink.activate(replaySeconds: replay)
+                // start a little before the first pip (user: "very tight") – the history holds 15 s
+                sink.activate(replaySeconds: replay + Self.leadInSeconds)
                 player.showNews(true)
                 setActive(true)
             case .fadeToProgram:

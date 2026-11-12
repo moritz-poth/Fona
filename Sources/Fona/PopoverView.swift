@@ -30,6 +30,7 @@ struct PopoverView: View {
 struct Header: View {
     @ObservedObject var model: AppModel
     var body: some View {
+        VStack(spacing: 0) {
         HStack(spacing: 12) {
             StationLogo(initials: model.current?.initials ?? "F", size: 48, active: model.isPlaying)
             VStack(alignment: .leading, spacing: 2) {
@@ -40,7 +41,10 @@ struct Header: View {
             PlayButton(model: model)
             GearMenu()
         }
-        .padding(16)
+        .padding([.horizontal, .top], 16)
+        .padding(.bottom, 8)
+        VolumeRow(settings: model.settings).padding(.horizontal, 16).padding(.bottom, 10)
+        }
         .background(Theme.surface)
         .overlay(alignment: .bottom) { Theme.border.frame(height: 1) }
     }
@@ -60,6 +64,7 @@ struct NewsHeader: View {
                 }
                 Spacer(minLength: 0)
                 PlayButton(model: model)
+                GearMenu()
             }
             HStack(spacing: 8) {
                 Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .semibold)).accessibilityHidden(true)
@@ -94,8 +99,9 @@ struct GearMenu: View {
     @Environment(\.openWindow) var openWindow
     var body: some View {
         Menu {
-            SettingsLink { Text(L.t(.settings) + " …") }
-            Button(L.t(.manual)) { NSApp.activate(ignoringOtherApps: true); openWindow(id: "manual") }
+            Button(L.t(.settings) + " …") { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) }
+                .keyboardShortcut(",")
+            Button(L.t(.manual)) { openWindow(id: "manual"); NSApp.activate(ignoringOtherApps: true) }
             Divider()
             Button(L.t(.quit)) { NSApp.terminate(nil) }
         } label: {
@@ -104,7 +110,6 @@ struct GearMenu: View {
         .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
         .accessibilityLabel(L.t(.settingsButton))
         .help(L.t(.settingsButton))
-        .simultaneousGesture(TapGesture().onEnded { NSApp.activate(ignoringOtherApps: true) })
     }
 }
 
@@ -239,6 +244,13 @@ struct AllStations: View {
                     Image(systemName: "magnifyingglass").foregroundStyle(Theme.text2).accessibilityHidden(true)
                     TextField(L.t(.searchPlaceholder), text: $model.query).textFieldStyle(.plain)
                         .accessibilityLabel(L.t(.searchPlaceholder))
+                    if !model.query.isEmpty {
+                        Button { model.query = "" } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.text2)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(L.t(.clearSearch)).help(L.t(.clearSearch))
+                    }
                 }
                 .padding(.horizontal, 8).frame(height: 28)
                 .background(RoundedRectangle(cornerRadius: 7).fill(Theme.surface))
@@ -481,6 +493,20 @@ struct UpdateBanner: View {
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.soft))
             .padding(.horizontal, 12).padding(.bottom, 6)
+        }
+    }
+}
+
+/// Small volume slider (user request 2026-11-12). Stored, applies to programme and news alike.
+struct VolumeRow: View {
+    @ObservedObject var settings: AppSettings
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "speaker.fill").font(.system(size: 10)).foregroundStyle(Theme.text2).accessibilityHidden(true)
+            Slider(value: $settings.volume, in: 0...1).controlSize(.mini).tint(Theme.switchOn)
+                .accessibilityLabel(L.t(.volume))
+                .accessibilityValue("\(Int((settings.volume * 100).rounded())) %")
+            Image(systemName: "speaker.wave.3.fill").font(.system(size: 10)).foregroundStyle(Theme.text2).accessibilityHidden(true)
         }
     }
 }

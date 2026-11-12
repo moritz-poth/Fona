@@ -15,6 +15,7 @@ enum L {
         case updates, version, checkNow, upToDate, updateCheckFailed, updateFailed, updateAvailable, install, installManual, betas, betasHint
         case moveToApplications, manual, about, aboutCopyright, aboutLicense, aboutWarranty, sourceCode, license, showManual
         case on, off, newsOnAir, backTo, stationNotFavourite
+        case close, hideFona, closeSettings, edit, undo, redo, cut, copy, paste, selectAll, volume, clearSearch
         case selfTestRunning, reportSent, reportSaved, reportFailed, reportTitle, reportDescription, reportContact, reportAttach, send
     }
 
@@ -107,6 +108,18 @@ enum L {
         case .reportContact: return ("E-Mail für Rückfragen (freiwillig)", "E-mail for questions (optional)")
         case .reportAttach: return ("Systeminfo und Protokoll anhängen (ohne Sendernamen und Links)", "Attach system info and log (without station names and links)")
         case .send: return ("Senden", "Send")
+        case .close: return ("Schließen", "Close")
+        case .hideFona: return ("Fona ausblenden", "Hide Fona")
+        case .closeSettings: return ("Einstellungen schließen", "Close Settings")
+        case .edit: return ("Bearbeiten", "Edit")
+        case .undo: return ("Widerrufen", "Undo")
+        case .redo: return ("Wiederholen", "Redo")
+        case .cut: return ("Ausschneiden", "Cut")
+        case .copy: return ("Kopieren", "Copy")
+        case .paste: return ("Einsetzen", "Paste")
+        case .selectAll: return ("Alles auswählen", "Select All")
+        case .volume: return ("Lautstärke", "Volume")
+        case .clearSearch: return ("Suche löschen", "Clear search")
         case .on: return ("Ein", "On")
         case .off: return ("Aus", "Off")
         case .newsOnAir: return ("Nachrichten von Deutschlandfunk", "News from Deutschlandfunk")

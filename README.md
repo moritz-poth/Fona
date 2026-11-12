@@ -1,8 +1,10 @@
-# Fona
+<h1 align="center"><img src="assets/icon.png" width="72" align="absmiddle" alt="">&nbsp;&nbsp;FONA</h1>
+
+<p align="center"><code>menu bar app</code>&nbsp;&nbsp;<code>macOS 14+</code>&nbsp;&nbsp;<code>free · GPL-3.0</code></p>
+
+<p align="center">☕ If you use Fona and like it, I would be glad if you <a href="https://buymeacoffee.com/moritzpoth">bought me a coffee</a>.</p>
 
 Internet radio in your Mac's menu bar – with an automatic switch to the Deutschlandfunk news, like the traffic-announcement button of an old car radio.
-
-If you use Fona and like it, I would be glad if you bought me a coffee: https://buymeacoffee.com/moritzpoth
 
 *Deutsch:* Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die Nachrichten, blendet Fona dorthin über und danach zurück zu deinem Sender. Das Handbuch gibt es in der App auf Deutsch (Zahnrad → Handbuch).
 
@@ -22,8 +24,8 @@ Every byte from a station, the directory or a pasted link is treated as hostile:
 - Self-test and problem reports are anonymous: no station names, links, titles, user or computer names.
 
 ## Install
-1. Download `Fona-<version>.zip` from [Releases](https://github.com/moritz-poth/Fona/releases) and unzip it.
-2. Move **Fona.app** to the **Applications** folder (from Downloads it cannot update itself).
+1. Download `Fona-<version>.dmg` from [Releases](https://github.com/moritz-poth/Fona/releases) and open it.
+2. Drag **Fona** onto the **Applications** folder in the window (from Downloads it cannot update itself).
 3. Fona is not notarised by Apple. The first time, macOS refuses to open it: open **System Settings → Privacy & Security** and click **Open Anyway** next to Fona. This is needed once.
 
 Requires macOS 14 or later, Apple silicon or Intel.

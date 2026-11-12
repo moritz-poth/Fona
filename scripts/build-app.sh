@@ -96,6 +96,53 @@ if [ "${1:-}" != "--fast" ]; then
   # updater zip + Ed25519 signature (only if the Keychain key matches the public key in the app)
   rm -f "dist/Fona-$RELEASE.zip" "dist/Fona-$RELEASE.zip.sig"
   ditto -c -k --keepParent "$APP" "dist/Fona-$RELEASE.zip"
+  # download image: the classic window with the app next to an Applications link (the updater keeps using the zip)
+  DMG="dist/Fona-$RELEASE.dmg"
+  STAGE=.build/dmg; RW=.build/Fona-rw.dmg
+  rm -rf "$STAGE" "$RW" "$DMG"; mkdir -p "$STAGE"
+  ditto "$APP" "$STAGE/Fona.app"
+  ln -s /Applications "$STAGE/Applications"
+  mkdir "$STAGE/.background"
+  swift scripts/make-dmg-background.swift .build/dmg-bg.png 1
+  swift scripts/make-dmg-background.swift .build/dmg-bg@2x.png 2
+  tiffutil -cathidpicheck .build/dmg-bg.png .build/dmg-bg@2x.png -out "$STAGE/.background/background.tiff" 2>/dev/null
+  # never eject someone else's volume, and Finder's disk "Fona" below must be ours: no other volume of that name
+  if ls /Volumes | grep -Eq '^Fona( [0-9]+)?$'; then echo "a volume \"Fona\" is mounted – eject it first" >&2; exit 1; fi
+  hdiutil create -quiet -volname Fona -srcfolder "$STAGE" -fs HFS+ -format UDRW "$RW"
+  hdiutil attach -quiet -noautoopen -mountpoint "/Volumes/Fona" "$RW"
+  # window layout is stored by Finder in .DS_Store (needs Finder automation for the terminal once)
+  osascript <<'OSA' || echo "warning: DMG window layout not set (Finder automation denied?)" >&2
+  tell application "Finder"
+    repeat 20 times -- Finder sees a fresh image only after a moment
+      if exists disk "Fona" then exit repeat
+      delay 0.5
+    end repeat
+    tell disk "Fona"
+      open
+      set current view of container window to icon view
+      set toolbar visible of container window to false
+      set opts to icon view options of container window
+      set arrangement of opts to not arranged
+      set icon size of opts to 128
+      set background picture of opts to file ".background:background.tiff"
+      set position of item "Fona.app" of container window to {140, 160}
+      set position of item "Applications" of container window to {400, 160}
+      set bounds of container window to {200, 120, 740, 460}
+      update without registering applications
+      delay 2
+      close
+      -- Finder writes the window size to .DS_Store only reliably after a second open/close
+      open
+      delay 1
+      close
+    end tell
+  end tell
+OSA
+  sync
+  # Finder or Spotlight may still hold the volume for a moment
+  hdiutil detach "/Volumes/Fona" -quiet || { sleep 2; hdiutil detach "/Volumes/Fona" -quiet -force; }
+  hdiutil convert -quiet "$RW" -format UDZO -imagekey zlib-level=9 -o "$DMG"
+  rm -rf "$STAGE" "$RW"
   KEY=$(swift scripts/update-key.swift public 2>/dev/null || true)
   if [ -n "$KEY" ] && grep -q "$KEY" Sources/FonaCore/Update/UpdateCheck.swift; then
     swift scripts/update-key.swift sign "dist/Fona-$RELEASE.zip" && echo "signed dist/Fona-$RELEASE.zip"

@@ -22,6 +22,8 @@ final class AppSettings: ObservableObject {
     @Published var autoUpdateCheck: Bool { didSet { d.set(autoUpdateCheck, forKey: "autoUpdateCheck") } }
     @Published var language: Language { didSet { d.set(language.rawValue, forKey: "language"); applyLanguage() } }
     @Published var betas: Bool { didSet { d.set(betas, forKey: "betas") } }
+    @Published var volume: Double { didSet { d.set(volume, forKey: "volume"); onVolume?(volume) } }
+    var onVolume: ((Double) -> Void)?
     @Published var lastStationID: UUID? { didSet { d.set(lastStationID?.uuidString, forKey: "lastStationID") } }
     @Published var launchAtLogin: Bool {
         didSet {
@@ -42,6 +44,8 @@ final class AppSettings: ObservableObject {
         resumeOnLaunch = d.object(forKey: "resumeOnLaunch") as? Bool ?? false
         autoUpdateCheck = d.object(forKey: "autoUpdateCheck") as? Bool ?? true
         betas = d.object(forKey: "betas") as? Bool ?? false
+        let v = d.object(forKey: "volume") as? Double ?? 0.8
+        volume = v.isFinite && (0...1).contains(v) ? v : 0.8
         language = d.string(forKey: "language").flatMap(Language.init(rawValue:)) ?? .system
         lastStationID = d.string(forKey: "lastStationID").flatMap(UUID.init(uuidString:))
         launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -110,7 +114,9 @@ final class AppModel: ObservableObject {
         settingsObserver = settings.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.applyNewsSettings() }
         }
-        if CommandLine.arguments.contains("--mute") { player.volume = 0 }
+        player.volume = Float(settings.volume)
+        settings.onVolume = { [weak self] v in self?.player.volume = Float(v) }
+        if CommandLine.arguments.contains("--mute") { player.volume = 0; settings.onVolume = nil }
         if settings.resumeOnLaunch, let id = settings.lastStationID, let s = library.station(id) { play(s) }
         // developer launch argument: --selftest (runs the self-test, sends the report, quits)
         if CommandLine.arguments.contains("--selftest") {

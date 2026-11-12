@@ -168,7 +168,7 @@ struct StationRow: View {
                 Text(verbatim: station.displayName).fontWeight(isCurrent ? .semibold : .regular).lineLimit(1).truncationMode(.middle)
                 Spacer(minLength: 4)
                 if isCurrent {
-                    Image(systemName: "waveform").accessibilityHidden(true)
+                    LevelBars(player: model.player).accessibilityHidden(true)
                 } else if let trailing {
                     Text(verbatim: trailing).font(.system(size: 11)).foregroundStyle(Theme.text2)
                 }
@@ -532,5 +532,39 @@ struct VerticalVolume: View {
             @unknown default: break
             }
         }
+    }
+}
+
+/// Five bars showing the real loudness of the last moments (user's pick 2026-11-12, proposal 4). Updates only while the
+/// window is open; stands still with "Reduce motion".
+struct LevelBars: View {
+    let player: Player
+    @State var history: [Float] = Array(repeating: 0, count: 5)
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+
+    var body: some View {
+        if reduceMotion {
+            Image(systemName: "waveform")
+        } else {
+            TimelineView(.periodic(from: .now, by: 0.08)) { context in
+                HStack(alignment: .center, spacing: 1.5) {
+                    ForEach(0..<5, id: \.self) { i in
+                        Capsule().frame(width: 2, height: Self.height(history[i]))
+                    }
+                }
+                .frame(width: 16, height: 14)
+                .onChange(of: context.date) { _, _ in
+                    history.removeFirst()
+                    history.append(player.currentLevel)
+                }
+            }
+        }
+    }
+
+    /// −36 dBFS → 3 pt, −8 dBFS and louder → 14 pt (radio RMS mostly sits between −27 and −12 dB).
+    static func height(_ rms: Float) -> CGFloat {
+        let db = 20 * log10(max(rms, 1e-6))
+        let t = min(1, max(0, (db + 36) / 28))
+        return 3 + 11 * CGFloat(t)
     }
 }

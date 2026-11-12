@@ -78,14 +78,15 @@ public final class Player: @unchecked Sendable {
     let position = UnsafeMutablePointer<Float>.allocate(capacity: 1) // current fade position 0…1
     let underruns = UnsafeMutablePointer<Int>.allocate(capacity: 1)  // render cycles that came up short
     let playing = UnsafeMutablePointer<Bool>.allocate(capacity: 1)
+    let level = UnsafeMutablePointer<Float>.allocate(capacity: 1)     // RMS of the last render cycle (before volume)
 
     public init() {
-        target.pointee = 0; position.pointee = 0; underruns.pointee = 0; playing.pointee = false
+        target.pointee = 0; position.pointee = 0; underruns.pointee = 0; playing.pointee = false; level.pointee = 0
         let fmt = AVAudioFormat(standardFormatWithSampleRate: DecoderCore.sampleRate, channels: 2)!
         let step = Float(1 / (Self.crossfadeSeconds * DecoderCore.sampleRate))
         let scratchP = UnsafeMutablePointer<Float>.allocate(capacity: 16384)
         let scratchN = UnsafeMutablePointer<Float>.allocate(capacity: 16384)
-        let (prog, nws, tgt, pos, under, play) = (program, news, target, position, underruns, playing)
+        let (prog, nws, tgt, pos, under, play, lvl) = (program, news, target, position, underruns, playing, level)
         node = AVAudioSourceNode(format: fmt) { _, _, frameCount, abl -> OSStatus in
             let frames = min(Int(frameCount), 8192)
             let buffers = UnsafeMutableAudioBufferListPointer(abl)
@@ -93,6 +94,7 @@ public final class Player: @unchecked Sendable {
             let right = buffers[1].mData!.assumingMemoryBound(to: Float.self)
             guard play.pointee else {
                 prog.serviceClear(); nws.serviceClear()
+                lvl.pointee = 0
                 for i in 0..<frames { left[i] = 0; right[i] = 0 }
                 return noErr
             }
@@ -102,6 +104,7 @@ public final class Player: @unchecked Sendable {
             let gotP = prog.tryRead(scratchP, frames * 2)
             let gotN = needN ? nws.tryRead(scratchN, frames * 2) : 0  // news ring only while it is heard
             if gotP < frames * 2 && (!needN || x < 1) { under.pointee += 1 }
+            var sum: Float = 0
             for i in 0..<frames {
                 if x < t { x = min(t, x + step) } else if x > t { x = max(t, x - step) }
                 let gp = cosf(x * .pi / 2), gn = sinf(x * .pi / 2)
@@ -109,7 +112,9 @@ public final class Player: @unchecked Sendable {
                 let nL: Float = 2 * i < gotN ? scratchN[2 * i] : 0, nR: Float = 2 * i + 1 < gotN ? scratchN[2 * i + 1] : 0
                 left[i] = pL * gp + nL * gn
                 right[i] = pR * gp + nR * gn
+                sum += left[i] * left[i] + right[i] * right[i]
             }
+            lvl.pointee = frames > 0 ? (sum / Float(frames * 2)).squareRoot() : 0
             pos.pointee = x
             return noErr
         }
@@ -117,9 +122,11 @@ public final class Player: @unchecked Sendable {
         engine.connect(node, to: engine.mainMixerNode, format: fmt)
     }
 
-    deinit { target.deallocate(); position.deallocate(); underruns.deallocate(); playing.deallocate() }
+    deinit { target.deallocate(); position.deallocate(); underruns.deallocate(); playing.deallocate(); level.deallocate() }
 
     public var underrunCount: Int { underruns.pointee }
+    /// Loudness of what is playing right now (RMS, 0…1, before the volume slider) – drives the level bars.
+    public var currentLevel: Float { level.pointee }
     public var volume: Float {
         get { engine.mainMixerNode.outputVolume }
         set { engine.mainMixerNode.outputVolume = newValue }

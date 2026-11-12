@@ -18,6 +18,14 @@ var frames = 0
 var started = false
 var startBuffer = 1.5
 
+let levels = Task {
+    while true {
+        try await Task.sleep(nanoseconds: 400_000_000)
+        if CommandLine.arguments.contains("--levels") {
+            print(String(format: "level %.3f → bar %.1f pt", player.currentLevel, 3 + 11 * min(1, max(0, (20 * log10(max(player.currentLevel, 1e-6)) + 36) / 28))))
+        }
+    }
+}
 let reporter = Task {
     while true {
         try await Task.sleep(nanoseconds: 10_000_000_000)
@@ -62,4 +70,5 @@ do {
     print("ERROR \(error)")
 }
 reporter.cancel()
+levels.cancel()
 player.stop()

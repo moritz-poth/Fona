@@ -454,3 +454,8 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Update-Hinweis: sitzt seit beta 3 am unteren Rand (Snapshot `6-update`); der Nutzer hatte ihn noch in beta 2 gesehen.
 - Anzeigenamen: Umbenennen gab es schon (Rechtsklick auf einen Sender); neu auch per Rechtsklick auf den Namen im Kopf. Handbuch ergänzt.
 - Veröffentlicht 2026-11-12: Prerelease **v0.1.0-beta.4** (letzter Sender im Kopf, Pegelbalken, Mausrad-Lautstärke, Umbenennen im Kopf). Vorher 1-Mio.-Fuzzing grün; API liefert beta.4, Downloads identisch mit dem Build.
+
+### Rückmeldung Nutzer 2026-11-12 (nach beta 4)
+- Lautstärke: auch die dünne Markierung beim Anklicken entfernt (keine Umrandung mehr; Pfeiltasten gehen weiter, VoiceOver ansagbar).
+- Einstellungen/Handbuch über das Zahnrad schließen jetzt sofort das Menüleisten-Fenster (vorher blieb es offen und verschwand erst beim Schließen des anderen Fensters).
+- „Zuletzt gehört“: Grenze 10 bestand schon (Favoriten zählen mit, werden dort aber nicht gezeigt) – Nutzer: so lassen.

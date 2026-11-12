@@ -103,9 +103,9 @@ struct GearMenu: View {
     @Environment(\.openWindow) var openWindow
     var body: some View {
         Menu {
-            Button(L.t(.settings) + " …") { openWindow(id: "settings"); NSApp.activate(ignoringOtherApps: true) }
+            Button(L.t(.settings) + " …") { open("settings") }
                 .keyboardShortcut(",")
-            Button(L.t(.manual)) { openWindow(id: "manual"); NSApp.activate(ignoringOtherApps: true) }
+            Button(L.t(.manual)) { open("manual") }
             Divider()
             Button(L.t(.quit)) { NSApp.terminate(nil) }
         } label: {
@@ -114,6 +114,15 @@ struct GearMenu: View {
         .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
         .accessibilityLabel(L.t(.settingsButton))
         .help(L.t(.settingsButton))
+    }
+
+    /// Opens settings or the manual and closes the menu bar window (user 2026-11-12: it vanished only later, when the
+    /// other window closed). The gear lives only in the menu bar window, so that is the key window here.
+    func open(_ id: String) {
+        let menuBarWindow = NSApp.keyWindow
+        openWindow(id: id)
+        NSApp.activate(ignoringOtherApps: true)
+        menuBarWindow?.close()
     }
 }
 
@@ -506,7 +515,6 @@ struct UpdateBanner: View {
 struct VerticalVolume: View {
     @ObservedObject var settings: AppSettings
     static let height: CGFloat = 30
-    @FocusState var focused: Bool
     @State var hovering = false
     @State var wheelMonitor: Any?
     var body: some View {
@@ -515,8 +523,6 @@ struct VerticalVolume: View {
                 Capsule().fill(Theme.segBg).frame(width: 4, height: Self.height)
                 Capsule().fill(Theme.switchOn).frame(width: 4, height: max(4, Self.height * CGFloat(settings.volume)))
             }
-            // own slim focus mark instead of the thick system ring (user 2026-11-12)
-            .overlay(Capsule().stroke(Theme.switchOn.opacity(focused ? 0.6 : 0), lineWidth: 1).frame(width: 8, height: Self.height + 4))
             .frame(width: 16, height: Self.height)  // wider hit area than the 4 pt bar
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0).onChanged { g in
@@ -527,8 +533,7 @@ struct VerticalVolume: View {
                 .onTapGesture { settings.volume = settings.volume == 0 ? 0.6 : 0 }  // quick mute
         }
         .focusable(true, interactions: .edit)
-        .focusEffectDisabled()
-        .focused($focused)
+        .focusEffectDisabled()  // no ring or outline at all (user 2026-11-12); arrow keys still work
         .onHover { hovering = $0 }
         .onAppear {
             // mouse wheel / trackpad over the control changes the volume (SwiftUI has no wheel modifier on macOS 14)

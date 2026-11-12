@@ -7,6 +7,8 @@ public enum StreamEvent: Sendable {
     case title(String)
     /// HLS discontinuity or format change: the decoder must start over.
     case discontinuity
+    /// Seconds to buffer before playback starts (HLS: two segments, so a late segment does not run the ring dry).
+    case bufferHint(Double)
 }
 
 /// Opens a station URL: follows .pls/.m3u playlists (S1), detects the real format from the bytes (N8),

@@ -1,68 +1,66 @@
 import AVFoundation
-import os
+import FonaAtomics
 
-/// Ring buffer for interleaved stereo PCM between a decoding thread and the audio render thread.
-/// The render side only ever *tries* the lock: it never waits, at worst it plays silence for one cycle.
+/// Lock-free single-producer/single-consumer ring for interleaved stereo PCM (decoder thread → render thread).
+/// The render thread never waits and never takes a lock (a preempted writer holding a lock caused rare dropouts
+/// in the soak test). Indices only grow; acquire/release ordering makes the copied samples visible before the index.
 public final class PCMRing: @unchecked Sendable {
     let capacity: Int  // in samples (frames × 2)
     let data: UnsafeMutablePointer<Float>
-    var readPos = 0, count = 0
-    var lock = os_unfair_lock()
+    let written = UnsafeMutablePointer<Int>.allocate(capacity: 1)   // producer-owned
+    let consumed = UnsafeMutablePointer<Int>.allocate(capacity: 1)  // consumer-owned
+    let clearRequest = UnsafeMutablePointer<Int>.allocate(capacity: 1)
 
     public init(seconds: Double) {
         capacity = Int(seconds * DecoderCore.sampleRate) * 2
         data = .allocate(capacity: capacity)
         data.initialize(repeating: 0, count: capacity)
+        written.pointee = 0; consumed.pointee = 0; clearRequest.pointee = 0
     }
-    deinit { data.deallocate() }
+    deinit { data.deallocate(); written.deallocate(); consumed.deallocate(); clearRequest.deallocate() }
 
-    public var fillSeconds: Double {
-        os_unfair_lock_lock(&lock); defer { os_unfair_lock_unlock(&lock) }
-        return Double(count / 2) / DecoderCore.sampleRate
-    }
+    var count: Int { fona_load_acquire(written) - fona_load_acquire(consumed) }
+    public var fillSeconds: Double { Double(max(0, count) / 2) / DecoderCore.sampleRate }
 
-    /// Writes as much as fits; returns the number of samples written. Copies in slices of ≤ 4096 samples with
-    /// memcpy so the lock is held for microseconds only (the render thread must almost never find it taken).
+    /// Producer: writes as much as fits; returns the number of samples written.
     @discardableResult
     public func write(_ s: [Float]) -> Int {
-        var done = 0
+        let w = written.pointee
+        let free = capacity - (w - fona_load_acquire(consumed))
+        let n = min(s.count, free)
+        guard n > 0 else { return 0 }
+        let start = w % capacity
+        let first = min(n, capacity - start)
         s.withUnsafeBufferPointer { src in
-            while done < src.count {
-                os_unfair_lock_lock(&lock)
-                let n = min(src.count - done, capacity - count, 4096)
-                if n == 0 { os_unfair_lock_unlock(&lock); return }
-                let w = (readPos + count) % capacity
-                let first = min(n, capacity - w)
-                (data + w).update(from: src.baseAddress! + done, count: first)
-                if first < n { data.update(from: src.baseAddress! + done + first, count: n - first) }
-                count += n
-                os_unfair_lock_unlock(&lock)
-                done += n
-            }
+            (data + start).update(from: src.baseAddress!, count: first)
+            if first < n { data.update(from: src.baseAddress! + first, count: n - first) }
         }
-        return done
+        fona_store_release(written, w + n)
+        return n
     }
 
-    /// Render thread: copies up to `n` samples into `out`, returns how many; -1 if the lock stayed busy.
-    /// Never blocks: retries `trylock` for a few microseconds (the writer holds it only for one ≤ 4096-sample memcpy);
-    /// the soak test showed 3–7 misses per 30 min with a single try.
+    /// Consumer (render thread): copies up to `n` samples, returns how many. Never blocks.
     func tryRead(_ out: UnsafeMutablePointer<Float>, _ n: Int) -> Int {
-        var got = false
-        for _ in 0..<2000 where !got { got = os_unfair_lock_trylock(&lock) }
-        guard got else { return -1 }
-        defer { os_unfair_lock_unlock(&lock) }
-        let m = min(n, count)
-        let first = min(m, capacity - readPos)
-        out.update(from: data + readPos, count: first)
+        serviceClear()
+        let r = consumed.pointee
+        let m = min(n, fona_load_acquire(written) - r)
+        guard m > 0 else { return 0 }
+        let start = r % capacity
+        let first = min(m, capacity - start)
+        out.update(from: data + start, count: first)
         if first < m { (out + first).update(from: data, count: m - first) }
-        readPos = (readPos + m) % capacity
-        count -= m
+        fona_store_release(consumed, r + m)
         return m
     }
 
-    public func clear() {
-        os_unfair_lock_lock(&lock); defer { os_unfair_lock_unlock(&lock) }
-        readPos = 0; count = 0
+    /// Any thread: asks the consumer to drop everything buffered (done on its next cycle).
+    public func clear() { fona_store_release(clearRequest, 1) }
+
+    /// Consumer side of `clear`: skip to the newest written sample.
+    func serviceClear() {
+        guard fona_load_acquire(clearRequest) != 0 else { return }
+        fona_store_release(clearRequest, 0)
+        fona_store_release(consumed, fona_load_acquire(written))
     }
 }
 
@@ -79,32 +77,30 @@ public final class Player: @unchecked Sendable {
     let target = UnsafeMutablePointer<Float>.allocate(capacity: 1)   // 0 = programme, 1 = news
     let position = UnsafeMutablePointer<Float>.allocate(capacity: 1) // current fade position 0…1
     let underruns = UnsafeMutablePointer<Int>.allocate(capacity: 1)  // render cycles that came up short
-    let lockMisses = UnsafeMutablePointer<Int>.allocate(capacity: 1) // render cycles that found a ring locked
     let playing = UnsafeMutablePointer<Bool>.allocate(capacity: 1)
 
     public init() {
-        target.pointee = 0; position.pointee = 0; underruns.pointee = 0; lockMisses.pointee = 0; playing.pointee = false
+        target.pointee = 0; position.pointee = 0; underruns.pointee = 0; playing.pointee = false
         let fmt = AVAudioFormat(standardFormatWithSampleRate: DecoderCore.sampleRate, channels: 2)!
         let step = Float(1 / (Self.crossfadeSeconds * DecoderCore.sampleRate))
         let scratchP = UnsafeMutablePointer<Float>.allocate(capacity: 16384)
         let scratchN = UnsafeMutablePointer<Float>.allocate(capacity: 16384)
-        let (prog, nws, tgt, pos, under, play, miss) = (program, news, target, position, underruns, playing, lockMisses)
+        let (prog, nws, tgt, pos, under, play) = (program, news, target, position, underruns, playing)
         node = AVAudioSourceNode(format: fmt) { _, _, frameCount, abl -> OSStatus in
             let frames = min(Int(frameCount), 8192)
             let buffers = UnsafeMutableAudioBufferListPointer(abl)
             let left = buffers[0].mData!.assumingMemoryBound(to: Float.self)
             let right = buffers[1].mData!.assumingMemoryBound(to: Float.self)
             guard play.pointee else {
+                prog.serviceClear(); nws.serviceClear()
                 for i in 0..<frames { left[i] = 0; right[i] = 0 }
                 return noErr
             }
             var x = pos.pointee
             let t = tgt.pointee
             let needN = t > 0 || x > 0
-            var gotP = prog.tryRead(scratchP, frames * 2)
-            var gotN = needN ? nws.tryRead(scratchN, frames * 2) : 0  // news ring only while it is heard
-            if gotP < 0 || gotN < 0 { miss.pointee += 1 }
-            gotP = max(gotP, 0); gotN = max(gotN, 0)
+            let gotP = prog.tryRead(scratchP, frames * 2)
+            let gotN = needN ? nws.tryRead(scratchN, frames * 2) : 0  // news ring only while it is heard
             if gotP < frames * 2 && (!needN || x < 1) { under.pointee += 1 }
             for i in 0..<frames {
                 if x < t { x = min(t, x + step) } else if x > t { x = max(t, x - step) }
@@ -121,10 +117,9 @@ public final class Player: @unchecked Sendable {
         engine.connect(node, to: engine.mainMixerNode, format: fmt)
     }
 
-    deinit { target.deallocate(); position.deallocate(); underruns.deallocate(); lockMisses.deallocate(); playing.deallocate() }
+    deinit { target.deallocate(); position.deallocate(); underruns.deallocate(); playing.deallocate() }
 
     public var underrunCount: Int { underruns.pointee }
-    public var lockMissCount: Int { lockMisses.pointee }
     public var volume: Float {
         get { engine.mainMixerNode.outputVolume }
         set { engine.mainMixerNode.outputVolume = newValue }

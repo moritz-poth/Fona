@@ -6,7 +6,8 @@ let package = Package(
     platforms: [.macOS(.v14)],
     targets: [
         // everything that can be checked without UI: NetGate, parsers, check catalogue
-        .target(name: "FonaCore", path: "Sources/FonaCore"),
+        .target(name: "FonaAtomics", path: "Sources/FonaAtomics"),
+        .target(name: "FonaCore", dependencies: ["FonaAtomics"], path: "Sources/FonaCore"),
         // the menu bar app and its decoder XPC service (bundled by scripts/build-app.sh)
         .executableTarget(name: "Fona", dependencies: ["FonaCore"], path: "Sources/Fona"),
         .executableTarget(name: "FonaDecoder", dependencies: ["FonaCore"], path: "Sources/FonaDecoder"),

@@ -206,7 +206,7 @@ final class AppModel: ObservableObject {
                 case .frames(let d):
                     guard decoder.decode(d) != nil else { return .refused(Messages.text(.notAudio, L.language)) }
                     frames += 1
-                case .discontinuity: break
+                case .discontinuity, .bufferHint: break
                 }
                 if frames >= 20 || Date() > deadline { break }
             }

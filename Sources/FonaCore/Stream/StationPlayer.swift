@@ -80,6 +80,7 @@ public final class StationPlayer: @unchecked Sendable {
             onState?(attempt == 0 ? .connecting : .reconnecting(attempt: attempt))
             let decoder = makeDecoder()
             var gotAudio = false
+            var startBuffer = Self.startBufferSeconds
             do {
                 var buffering = true
                 for try await e in try await opener(url) {
@@ -92,11 +93,13 @@ public final class StationPlayer: @unchecked Sendable {
                         onTitle?(t)
                     case .discontinuity:
                         decoder.stop()  // the following .format event starts it again
+                    case .bufferHint(let s):
+                        startBuffer = min(max(startBuffer, s), 15)
                     case .frames(let d):
                         guard let pcm = decoder.pcm(d) else { throw Rejection.notAudio }
                         try await write(pcm)
                         gotAudio = true
-                        if buffering, ring.fillSeconds >= Self.startBufferSeconds {
+                        if buffering, ring.fillSeconds >= startBuffer {
                             buffering = false
                             attempt = 0
                             onState?(.playing)

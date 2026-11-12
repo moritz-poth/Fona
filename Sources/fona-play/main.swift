@@ -16,12 +16,13 @@ let t0 = Date()
 var decoder: DecoderCore?
 var frames = 0
 var started = false
+var startBuffer = 1.5
 
 let reporter = Task {
     while true {
         try await Task.sleep(nanoseconds: 10_000_000_000)
-        print(String(format: "[%5.0fs] buffer %.1f s · underruns %d (lock %d) · decoded %.0f s · decode errors %d",
-                     Date().timeIntervalSince(t0), player.program.fillSeconds, player.underrunCount, player.lockMissCount,
+        print(String(format: "[%5.0fs] buffer %.1f s · underruns %d · decoded %.0f s · decode errors %d",
+                     Date().timeIntervalSince(t0), player.program.fillSeconds, player.underrunCount,
                      Double(frames) / DecoderCore.sampleRate, decoder?.errors ?? 0))
     }
 }
@@ -37,6 +38,8 @@ do {
             print("title: \(t)")
         case .discontinuity:
             print("discontinuity")
+        case .bufferHint(let s):
+            startBuffer = max(startBuffer, s)
         case .frames(let d):
             let pcm = decoder!.decode(d)
             frames += pcm.count / 2
@@ -46,7 +49,7 @@ do {
                 rest = rest.dropFirst(n)
                 if !rest.isEmpty { try await Task.sleep(nanoseconds: 50_000_000) }
             }
-            if !started && player.program.fillSeconds >= 1.5 { player.setPlaying(true); started = true }
+            if !started && player.program.fillSeconds >= startBuffer { player.setPlaying(true); started = true }
         }
         if Date().timeIntervalSince(t0) > seconds { break }
     }

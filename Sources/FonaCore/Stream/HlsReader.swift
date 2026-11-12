@@ -37,6 +37,7 @@ public enum HlsReader {
         guard case .media(var media) = list else { throw Rejection.notAudio }
         let mediaURL = url
 
+        cont.yield(.bufferHint(2 * media.targetDuration))
         var nextSeq = media.segments[max(0, media.segments.count - startBehindEdge)].sequence
         var hosts = Set<String>()
         var guardian: FrameGuard?

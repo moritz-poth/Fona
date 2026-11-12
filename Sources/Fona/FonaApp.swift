@@ -25,5 +25,10 @@ struct FonaApp: App {
         Settings {
             SettingsView(model: model, settings: model.settings)
         }
+
+        Window(L.t(.manual), id: "manual") {
+            ManualView(settings: model.settings)
+        }
+        .windowResizability(.contentMinSize)
     }
 }

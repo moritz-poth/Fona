@@ -12,6 +12,8 @@ enum L {
         case support, selfTest, selfTestHint, runSelfTest, report, reportButton, showLog, likeFona, likeFonaHint, coffee
         case play, pause, settingsButton, favoriteAdd, favoriteRemove, rename, remove, quit, connecting, buffering, reconnecting
         case libraryReset, selfTestPassed, selfTestFailed, stationCount, sortedByPopularity, done
+        case updates, version, checkNow, upToDate, updateCheckFailed, updateFailed, updateAvailable, install, installManual, betas, betasHint
+        case moveToApplications, manual, about, aboutCopyright, aboutLicense, aboutWarranty, sourceCode, license, showManual
         case selfTestRunning, reportSent, reportSaved, reportFailed, reportTitle, reportDescription, reportContact, reportAttach, send
     }
 
@@ -104,6 +106,26 @@ enum L {
         case .reportContact: return ("E-Mail für Rückfragen (freiwillig)", "E-mail for questions (optional)")
         case .reportAttach: return ("Systeminfo und Protokoll anhängen (ohne Sendernamen und Links)", "Attach system info and log (without station names and links)")
         case .send: return ("Senden", "Send")
+        case .updates: return ("Updates", "Updates")
+        case .version: return ("Version %@", "Version %@")
+        case .checkNow: return ("Jetzt suchen", "Check Now")
+        case .upToDate: return ("Fona ist aktuell.", "Fona is up to date.")
+        case .updateCheckFailed: return ("Konnte nicht nach Updates suchen. Prüfe die Internetverbindung.", "Could not check for updates. Check the internet connection.")
+        case .updateFailed: return ("Das Update konnte nicht geladen oder geprüft werden.", "The update could not be downloaded or verified.")
+        case .updateAvailable: return ("Fona %@ ist verfügbar.", "Fona %@ is available.")
+        case .install: return ("Installieren", "Install")
+        case .installManual: return ("Dieses Update muss von Hand installiert werden.", "This update has to be installed by hand.")
+        case .betas: return ("Testversionen erhalten", "Get test versions")
+        case .betasHint: return ("Vorabversionen zum Ausprobieren, können Fehler enthalten.", "Pre-releases for trying out, may contain bugs.")
+        case .moveToApplications: return ("Bitte zieh Fona in den Programme-Ordner und starte es von dort – sonst kann es sich nicht aktualisieren.", "Please move Fona to the Applications folder and open it from there – otherwise it cannot update itself.")
+        case .manual: return ("Handbuch", "Manual")
+        case .showManual: return ("Handbuch öffnen", "Open Manual")
+        case .about: return ("Über Fona", "About Fona")
+        case .aboutCopyright: return ("© 2026 Moritz Poth", "© 2026 Moritz Poth")
+        case .aboutLicense: return ("Fona ist freie Software: Du kannst sie unter der GNU General Public License, Version 3 oder neuer, weitergeben und verändern.", "Fona is free software: you can redistribute it and/or modify it under the GNU General Public License, version 3 or later.")
+        case .aboutWarranty: return ("Fona wird OHNE JEDE GEWÄHRLEISTUNG bereitgestellt. Senderverzeichnis: radio-browser.info. Fona ist nicht mit Deutschlandfunk verbunden.", "Fona comes with ABSOLUTELY NO WARRANTY. Station directory: radio-browser.info. Fona is not affiliated with Deutschlandfunk.")
+        case .sourceCode: return ("Quellcode", "Source Code")
+        case .license: return ("Lizenz", "License")
         }
     }
 

@@ -5,6 +5,21 @@ import FonaCore
 struct SettingsView: View {
     @ObservedObject var model: AppModel
     @ObservedObject var settings: AppSettings
+    @ObservedObject var updater: AppUpdater
+    @Environment(\.openWindow) var openWindow
+
+    init(model: AppModel, settings: AppSettings) {
+        self.model = model; self.settings = settings; self.updater = model.updater
+    }
+
+    var updateStatus: String? {
+        switch updater.state {
+        case .checking: return "…"
+        case .upToDate: return L.t(.upToDate)
+        case .failed(let m): return m
+        default: return updater.available.map { L.f(.updateAvailable, String($0.tag.dropFirst($0.tag.hasPrefix("v") ? 1 : 0))) }
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -37,13 +52,21 @@ struct SettingsView: View {
                 section(L.t(.general)) {
                     row(L.t(.launchAtLogin)) { FonaSwitch(isOn: $settings.launchAtLogin, label: L.t(.launchAtLogin)) }
                     divider
-                    row(L.t(.autoUpdate)) { FonaSwitch(isOn: $settings.autoUpdateCheck, label: L.t(.autoUpdate)) }
-                    divider
                     row(L.t(.language)) {
                         dropdown(languageName(settings.language)) {
                             ForEach(AppSettings.Language.allCases, id: \.self) { l in Button(languageName(l)) { settings.language = l } }
                         }
                     }
+                }
+                section(L.t(.updates)) {
+                    row(L.f(.version, AppUpdater.current), hint: updateStatus) {
+                        Button(L.t(.checkNow)) { model.updater.check(manual: true) }.buttonStyle(FieldButtonStyle())
+                            .disabled(model.updater.state == .checking)
+                    }
+                    divider
+                    row(L.t(.autoUpdate)) { FonaSwitch(isOn: $settings.autoUpdateCheck, label: L.t(.autoUpdate)) }
+                    divider
+                    row(L.t(.betas), hint: L.t(.betasHint)) { FonaSwitch(isOn: $settings.betas, label: L.t(.betas)) }
                 }
                 section(L.t(.support)) {
                     row(L.t(.selfTest), hint: L.t(.selfTestHint)) {
@@ -57,12 +80,32 @@ struct SettingsView: View {
                         }
                     }
                     divider
+                    row(L.t(.manual)) {
+                        Button(L.t(.showManual)) { NSApp.activate(ignoringOtherApps: true); openWindow(id: "manual") }.buttonStyle(FieldButtonStyle())
+                    }
+                    divider
                     row(L.t(.likeFona), hint: L.t(.likeFonaHint)) {
                         Button(L.t(.coffee)) { NSWorkspace.shared.open(URL(string: "https://buymeacoffee.com/moritzpoth")!) }
                             .buttonStyle(FieldButtonStyle(filled: true))
                     }
                 }
             }
+                section(L.t(.about)) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(verbatim: "Fona \(AppUpdater.current) · \(L.t(.aboutCopyright))").fontWeight(.semibold)
+                        Text(L.t(.aboutLicense)).font(.system(size: 11)).foregroundStyle(Theme.text2).fixedSize(horizontal: false, vertical: true)
+                        Text(L.t(.aboutWarranty)).font(.system(size: 11)).foregroundStyle(Theme.text2).fixedSize(horizontal: false, vertical: true)
+                        HStack {
+                            Button(L.t(.license)) {
+                                if let u = Bundle.main.url(forResource: "LICENSE", withExtension: "txt") { NSWorkspace.shared.open(u) }
+                            }.buttonStyle(FieldButtonStyle())
+                            Button(L.t(.sourceCode)) { NSWorkspace.shared.open(URL(string: "https://github.com/moritz-poth/Fona")!) }
+                                .buttonStyle(FieldButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             .padding(.horizontal, 24).padding(.vertical, 20)
         .frame(width: 560)
         .fixedSize(horizontal: false, vertical: true)  // the window fits its content

@@ -21,6 +21,7 @@ final class AppSettings: ObservableObject {
     @Published var resumeOnLaunch: Bool { didSet { d.set(resumeOnLaunch, forKey: "resumeOnLaunch") } }
     @Published var autoUpdateCheck: Bool { didSet { d.set(autoUpdateCheck, forKey: "autoUpdateCheck") } }
     @Published var language: Language { didSet { d.set(language.rawValue, forKey: "language"); applyLanguage() } }
+    @Published var betas: Bool { didSet { d.set(betas, forKey: "betas") } }
     @Published var lastStationID: UUID? { didSet { d.set(lastStationID?.uuidString, forKey: "lastStationID") } }
     @Published var launchAtLogin: Bool {
         didSet {
@@ -40,6 +41,7 @@ final class AppSettings: ObservableObject {
         countries = Array((saved ?? [region ?? "DE"]).prefix(20))
         resumeOnLaunch = d.object(forKey: "resumeOnLaunch") as? Bool ?? false
         autoUpdateCheck = d.object(forKey: "autoUpdateCheck") as? Bool ?? true
+        betas = d.object(forKey: "betas") as? Bool ?? false
         language = d.string(forKey: "language").flatMap(Language.init(rawValue:)) ?? .system
         lastStationID = d.string(forKey: "lastStationID").flatMap(UUID.init(uuidString:))
         launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -66,6 +68,7 @@ final class AppModel: ObservableObject {
     let directory = RadioBrowser()
     lazy var station = StationPlayer(ring: player.program) { DecoderClient() }
     lazy var news = NewsWatcher(player: player) { DecoderClient() }
+    lazy var updater = AppUpdater(settings: settings)
 
     @Published var library = LibraryData()
     @Published var notice: String?
@@ -97,6 +100,8 @@ final class AppModel: ObservableObject {
         news.onActive = { [weak self] on in self?.newsActive = on }
         news.log = { log.notice("\($0, privacy: .public)"); FileLog.shared.write($0) }
         FileLog.shared.write("start Fona \(version) (\(build))")
+        if AppUpdater.translocated { notice = L.t(.moveToApplications) }
+        updater.start()
         applyNewsSettings()
         news.setEnabled(settings.newsEnabled)
         settingsObserver = settings.objectWillChange.sink { [weak self] _ in

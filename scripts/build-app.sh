@@ -3,26 +3,32 @@
 # Universal (arm64 + x86_64), ad-hoc signed inside-out, never --deep. Usage: scripts/build-app.sh [--fast]  (--fast: arm64 debug)
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION=0.1.0; BUILD=1
-APP=dist/Fona.app; XPC="$APP/Contents/XPCServices/FonaDecoder.xpc"
+VERSION=${VERSION:-0.1.0}          # CFBundleShortVersionString (numbers only)
+RELEASE=${RELEASE:-0.1.0}          # tag v$RELEASE and zip name Fona-$RELEASE.zip (e.g. 0.2.0-beta.1)
+BUILD=1
+APP=dist/Fona.app; XPC="$APP/Contents/XPCServices/FonaDecoder.xpc"; HELPER="$APP/Contents/Helpers/FonaUpdater.app"
 if [ "${1:-}" = "--fast" ]; then
   swift build --product Fona
   swift build --product FonaDecoder
-  BIN_APP=.build/debug/Fona; BIN_XPC=.build/debug/FonaDecoder
+  swift build --product FonaUpdater
+  BIN_APP=.build/debug/Fona; BIN_XPC=.build/debug/FonaDecoder; BIN_UPD=.build/debug/FonaUpdater
 else
   for a in arm64 x86_64; do
     swift build -c release --arch $a --product Fona
     swift build -c release --arch $a --product FonaDecoder
+    swift build -c release --arch $a --product FonaUpdater
   done
   mkdir -p .build/universal
   lipo -create .build/arm64-apple-macosx/release/Fona .build/x86_64-apple-macosx/release/Fona -output .build/universal/Fona
   lipo -create .build/arm64-apple-macosx/release/FonaDecoder .build/x86_64-apple-macosx/release/FonaDecoder -output .build/universal/FonaDecoder
-  BIN_APP=.build/universal/Fona; BIN_XPC=.build/universal/FonaDecoder
+  lipo -create .build/arm64-apple-macosx/release/FonaUpdater .build/x86_64-apple-macosx/release/FonaUpdater -output .build/universal/FonaUpdater
+  BIN_APP=.build/universal/Fona; BIN_XPC=.build/universal/FonaDecoder; BIN_UPD=.build/universal/FonaUpdater
 fi
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$XPC/Contents/MacOS"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$XPC/Contents/MacOS" "$HELPER/Contents/MacOS"
 cp "$BIN_APP" "$APP/Contents/MacOS/Fona"
 cp "$BIN_XPC" "$XPC/Contents/MacOS/FonaDecoder"
+cp "$BIN_UPD" "$HELPER/Contents/MacOS/FonaUpdater"
 cp LICENSE "$APP/Contents/Resources/LICENSE.txt"
 # icons: drawn from design/icon (rendered once to Resources/*.png)
 ICONSET=$(mktemp -d)/AppIcon.iconset; mkdir -p "$ICONSET"
@@ -32,6 +38,7 @@ for s in 16 32 128 256 512; do
 done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 cp Resources/MenuBarIcon.png "Resources/MenuBarIcon@2x.png" "$APP/Contents/Resources/"
+cp -R Resources/help "$APP/Contents/Resources/help"
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -41,7 +48,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleIdentifier</key><string>io.github.moritz-poth.fona</string>
   <key>CFBundleVersion</key><string>$BUILD</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
-  <key>FonaRelease</key><string>$VERSION</string>
+  <key>FonaRelease</key><string>$RELEASE</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleDevelopmentRegion</key><string>en</string>
@@ -65,7 +72,34 @@ cat > "$XPC/Contents/Info.plist" <<PLIST
   <key>XPCService</key><dict><key>ServiceType</key><string>Application</string></dict>
 </dict></plist>
 PLIST
+cat > "$HELPER/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>FonaUpdater</string>
+  <key>CFBundleExecutable</key><string>FonaUpdater</string>
+  <key>CFBundleIdentifier</key><string>io.github.moritz-poth.fona.updater</string>
+  <key>CFBundleVersion</key><string>$BUILD</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>LSUIElement</key><true/>
+  <key>LSMinimumSystemVersion</key><string>14.0</string>
+</dict></plist>
+PLIST
+# signed inside-out, never --deep: decoder (sandbox, no rights), updater (no sandbox, hardened runtime), app (sandbox)
 codesign --force --sign - --options runtime --entitlements Entitlements/FonaDecoder.entitlements "$XPC"
+codesign --force --sign - --options runtime "$HELPER"
 codesign --force --sign - --options runtime --entitlements Entitlements/Fona.entitlements "$APP"
 codesign --verify --deep --strict "$APP"
-echo "built $APP ($VERSION)"
+echo "built $APP ($RELEASE)"
+if [ "${1:-}" != "--fast" ]; then
+  # updater zip + Ed25519 signature (only if the Keychain key matches the public key in the app)
+  rm -f "dist/Fona-$RELEASE.zip" "dist/Fona-$RELEASE.zip.sig"
+  ditto -c -k --keepParent "$APP" "dist/Fona-$RELEASE.zip"
+  KEY=$(swift scripts/update-key.swift public 2>/dev/null || true)
+  if [ -n "$KEY" ] && grep -q "$KEY" Sources/FonaCore/Update/UpdateCheck.swift; then
+    swift scripts/update-key.swift sign "dist/Fona-$RELEASE.zip" && echo "signed dist/Fona-$RELEASE.zip"
+  else
+    echo "NOT SIGNED: the Keychain key does not match UpdateKey.publicKey" >&2
+  fi
+fi

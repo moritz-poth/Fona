@@ -13,6 +13,7 @@ struct PopoverView: View {
                 NewsRow(model: model, settings: settings)
                 SegmentPicker(tab: $model.tab)
                 if let n = model.notice { NoticeCard(text: n) { model.notice = nil } }
+                UpdateBanner(updater: model.updater)
                 if model.tab == .favorites { FavoritesList(model: model) } else { AllStations(model: model, settings: settings) }
             }
             if model.addSheet { AddStationSheet(model: model).transition(.move(edge: .top)) }
@@ -90,9 +91,11 @@ struct PlayButton: View {
 }
 
 struct GearMenu: View {
+    @Environment(\.openWindow) var openWindow
     var body: some View {
         Menu {
             SettingsLink { Text(L.t(.settings) + " …") }
+            Button(L.t(.manual)) { NSApp.activate(ignoringOtherApps: true); openWindow(id: "manual") }
             Divider()
             Button(L.t(.quit)) { NSApp.terminate(nil) }
         } label: {
@@ -432,5 +435,29 @@ struct ToastView: View {
             .padding(.horizontal, 12).padding(.vertical, 8)
             .background(Capsule().fill(Theme.accent).shadow(color: .black.opacity(0.15), radius: 6, y: 3))
             .accessibilityAddTraits(.updatesFrequently)
+    }
+}
+
+struct UpdateBanner: View {
+    @ObservedObject var updater: AppUpdater
+    var body: some View {
+        if let r = updater.available {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.down.circle").accessibilityHidden(true)
+                Text(verbatim: r.manual ? L.t(.installManual) : L.f(.updateAvailable, String(r.tag.dropFirst(r.tag.hasPrefix("v") ? 1 : 0))))
+                    .font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 4)
+                if r.manual || AppUpdater.translocated {
+                    Button("GitHub") { updater.openReleases() }.buttonStyle(FieldButtonStyle())
+                } else if updater.state == .downloading {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Button(L.t(.install)) { updater.install() }.buttonStyle(FieldButtonStyle(filled: true))
+                }
+            }
+            .padding(10)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.soft))
+            .padding(.horizontal, 12).padding(.bottom, 6)
+        }
     }
 }

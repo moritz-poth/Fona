@@ -11,6 +11,7 @@ let package = Package(
         // the menu bar app and its decoder XPC service (bundled by scripts/build-app.sh)
         .executableTarget(name: "Fona", dependencies: ["FonaCore"], path: "Sources/Fona"),
         .executableTarget(name: "FonaDecoder", dependencies: ["FonaCore"], path: "Sources/FonaDecoder"),
+        .executableTarget(name: "FonaUpdater", dependencies: ["FonaCore"], path: "Sources/FonaUpdater"),
         // developer tool: runs one URL through NetGate and prints what came back (live checks)
         .executableTarget(name: "fona-probe", dependencies: ["FonaCore"], path: "Sources/fona-probe"),
         .executableTarget(name: "fona-play", dependencies: ["FonaCore"], path: "Sources/fona-play"),

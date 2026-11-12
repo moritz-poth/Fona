@@ -16,3 +16,8 @@ macOS menu bar internet radio with automatic switch to Deutschlandfunk news. Pla
 - `FONA_LIVE=1 swift test --filter liveStream` – real stations over the internet.
 - `swift run fona-probe stream <url>` – one URL through NetGate, prints head, sniffed format, titles.
 - Spikes from P0 (throwaway prototypes): `spikes/p0a` (sandbox + updater helper), `p0c` (HLS TS demux), `p0f` (NWConnection client), `p0g` (XPC decoder).
+
+## Updates and release
+- Release: bump `VERSION`/`RELEASE`/`BUILD` in `scripts/build-app.sh` (or pass them as environment variables), run `scripts/build-app.sh` → `dist/Fona-<release>.zip` + `.sig`. Tag `v<release>`, upload zip + sig. Test builds as GitHub **prerelease** (users get them with "Get test versions").
+- Signing key: Keychain item "Fona update key" (`swift scripts/update-key.swift public|sign`), public key in `UpdateKey.publicKey`. Never replace it. Key loss: delete the item, `update-key.swift new`, put the new key into `UpdateKey.publicKey`, release with an extra empty `Fona-<version>.manual` asset – older apps then point to the releases page.
+- `FonaUpdater.app` (Contents/Helpers, no sandbox) is the trust boundary: no arguments, reads `pending.zip(.sig)` from Fona's container, verifies signature, contents, bundle id, strictly newer `FonaRelease`, codesign; Fona quits right after starting it. Tested 2026-11-12: valid update OK; tampered zip, downgrade and symlink refused.

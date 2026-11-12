@@ -407,3 +407,9 @@ Auf diesem Mac sind nur die Command Line Tools installiert, **kein Xcode**. Icon
 - Worker (Mountpoint `worker/`, **nicht committet, nicht deployt**): Eintrag `"fona": "moritz-poth/fona-reports"`, Härtung aus Review M12 (IP nur als gesalzener Hash, Steuer-/Bidi-/Tag-Zeichen entfernt, Problemtext als Codeblock).
 - 2026-11-12 erledigt: Repo `moritz-poth/fona-reports` (privat) angelegt, vom Nutzer im Token freigegeben, Worker committet (Mountpoint `2cae717`) und deployt inkl. `cd909e7`, Secret `IP_SALT` gesetzt. **Ende-zu-Ende geprüft:** `--selftest` → Issue #1 „8/8 passed“ (147 Prüfungen), Bericht ohne Namen, Pfade, URLs oder Sendernamen; Protokoll im Bericht nur „start Fona …“ und „self-test …“.
 - Nicht geprüft: Berichte von Mountpoint/MediaFiles Check nach dem Deploy.
+
+### P7 Release – 2026-11-12 · lokal fertig, Veröffentlichung offen
+- Eigener Schlüssel „Fona update key“ (Schlüsselbund), `UpdateKey.publicKey`; `UpdateCheck` (Releases nur mit `.sig`, Downloads nur von `github.com/moritz-poth/Fona/releases/download/`, Testversionen per Einstellung), `AppUpdater` (Suche beim Start + alle 6 h über NetGate, Download, Vorprüfung, Übergabe, sofort beenden), `FonaUpdater.app` (Vertrauensgrenze, §7), Hinweis bei App Translocation.
+- Handbuch de/en (`Resources/help`, eigenes Fenster), Abschnitte „Updates“ und „Über Fona“ in den Einstellungen, README.
+- **Lokaler Update-Test:** 0.1.0 → signiertes 0.1.1: ausgetauscht, neu gestartet. Abgewiesen: manipulierte ZIP („signature does not match“), signiertes 0.1.0 („no downgrades“), Symlink statt ZIP („no download“).
+- Offen: GitHub-Repo `moritz-poth/Fona` (öffentlich) anlegen und pushen, erstes Prerelease, Update über den echten Weg testen; macOS-14-Test (P0-a).

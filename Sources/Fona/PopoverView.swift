@@ -158,23 +158,28 @@ struct StationRow: View {
     var trailing: String?
     var body: some View {
         let isCurrent = model.current?.url == station.url && model.isPlaying
-        HStack(spacing: 10) {
-            StationLogo(initials: station.initials, active: isCurrent)
-            Text(verbatim: station.displayName).fontWeight(isCurrent ? .semibold : .regular).lineLimit(1).truncationMode(.middle)
-            Spacer(minLength: 4)
-            if isCurrent {
-                Image(systemName: "waveform").accessibilityLabel(L.t(.playing))
-            } else if let trailing {
-                Text(verbatim: trailing).font(.system(size: 11)).foregroundStyle(Theme.text2)
+        Button { model.play(station) } label: {
+            HStack(spacing: 10) {
+                StationLogo(initials: station.initials, active: isCurrent)
+                Text(verbatim: station.displayName).fontWeight(isCurrent ? .semibold : .regular).lineLimit(1).truncationMode(.middle)
+                Spacer(minLength: 4)
+                if isCurrent {
+                    Image(systemName: "waveform").accessibilityHidden(true)
+                } else if let trailing {
+                    Text(verbatim: trailing).font(.system(size: 11)).foregroundStyle(Theme.text2)
+                }
             }
+            .padding(.horizontal, 8).frame(height: 40)
+            .background(RoundedRectangle(cornerRadius: 7).fill(isCurrent ? Theme.soft : .clear))
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 8).frame(height: 40)
-        .background(RoundedRectangle(cornerRadius: 7).fill(isCurrent ? Theme.soft : .clear))
-        .contentShape(Rectangle())
-        .onTapGesture { model.play(station) }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { model.play(station) }
+        .buttonStyle(.plain)
+        .accessibilityLabel([station.displayName, isCurrent ? L.t(.playing) : nil, trailing].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityActions {
+            Button(model.library.isFavorite(station.id) ? L.t(.favoriteRemove) : L.t(.favoriteAdd)) { model.toggleFavorite(station) }
+            Button(L.t(.rename)) { model.renaming = station }
+            Button(L.t(.remove)) { model.remove(station) }
+        }
         .contextMenu {
             Button(model.library.isFavorite(station.id) ? L.t(.favoriteRemove) : L.t(.favoriteAdd)) { model.toggleFavorite(station) }
             Button(L.t(.rename)) { model.renaming = station }
@@ -233,6 +238,7 @@ struct AllStations: View {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass").foregroundStyle(Theme.text2).accessibilityHidden(true)
                     TextField(L.t(.searchPlaceholder), text: $model.query).textFieldStyle(.plain)
+                        .accessibilityLabel(L.t(.searchPlaceholder))
                 }
                 .padding(.horizontal, 8).frame(height: 28)
                 .background(RoundedRectangle(cornerRadius: 7).fill(Theme.surface))
@@ -266,22 +272,30 @@ struct ResultRow: View {
     var body: some View {
         let fav = model.isFavorite(url: result.url)
         let s = result.station()
-        HStack(spacing: 10) {
-            StationLogo(initials: s.initials, active: model.current?.url == result.url && model.isPlaying)
-            VStack(alignment: .leading, spacing: 0) {
-                Text(verbatim: result.name).lineLimit(1)
-                Text(verbatim: meta).font(.system(size: 11)).foregroundStyle(Theme.text2).lineLimit(1)
+        HStack(spacing: 4) {
+            Button { model.play(s) } label: {
+                HStack(spacing: 10) {
+                    StationLogo(initials: s.initials, active: model.current?.url == result.url && model.isPlaying)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(verbatim: result.name).lineLimit(1)
+                        Text(verbatim: meta).font(.system(size: 11)).foregroundStyle(Theme.text2).lineLimit(1)
+                    }
+                    Spacer(minLength: 4)
+                }
+                .frame(height: 40).padding(.leading, 8)
+                .contentShape(Rectangle())
             }
-            Spacer(minLength: 4)
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(result.name), \(meta)")
             Button { model.toggleFavorite(s) } label: {
                 Image(systemName: fav ? "star.fill" : "star").foregroundStyle(fav ? Theme.switchOn : Theme.text2)
+                    .frame(width: 24, height: 24).contentShape(Rectangle())
             }
-            .buttonStyle(.plain).frame(width: 24, height: 24)
-            .accessibilityLabel("\(result.name) – \(fav ? L.t(.favoriteRemove) : L.t(.favoriteAdd))")
+            .buttonStyle(.plain)
+            .accessibilityLabel(fav ? L.t(.favoriteRemove) : L.t(.favoriteAdd))
+            .accessibilityValue(result.name)
+            .padding(.trailing, 4)
         }
-        .frame(height: 40).padding(.horizontal, 8)
-        .contentShape(Rectangle())
-        .onTapGesture { model.play(s) }
     }
     var meta: String {
         var parts: [String] = []
@@ -331,6 +345,7 @@ struct CountryMenu: View {
 
 struct AddStationSheet: View {
     @ObservedObject var model: AppModel
+    @FocusState var focused: Bool
     @State var url = ""
     @State var name = ""
     @State var favorite = true
@@ -338,12 +353,13 @@ struct AddStationSheet: View {
     @State var checking = false
     var body: some View {
         ZStack(alignment: .top) {
-            Color.black.opacity(0.15).ignoresSafeArea().onTapGesture { model.addSheet = false }
+            Color.black.opacity(0.15).ignoresSafeArea().onTapGesture { model.addSheet = false }.accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 14) {
                 Text(L.t(.addTitle)).font(.system(size: 15, weight: .semibold)).accessibilityAddTraits(.isHeader)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(L.t(.streamLink)).font(.system(size: 12, weight: .semibold))
                     TextField("https://", text: $url).textFieldStyle(.roundedBorder)
+                        .focused($focused).accessibilityLabel(L.t(.streamLink))
                         .onSubmit(check).onChange(of: url) { _, _ in result = nil }
                     if checking { Text(L.t(.checking)).font(.system(size: 12)).foregroundStyle(Theme.text2) }
                     switch result {
@@ -356,7 +372,7 @@ struct AddStationSheet: View {
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     Text(L.t(.name)).font(.system(size: 12, weight: .semibold))
-                    TextField("", text: $name).textFieldStyle(.roundedBorder)
+                    TextField("", text: $name).textFieldStyle(.roundedBorder).accessibilityLabel(L.t(.name))
                 }
                 Toggle(L.t(.addToFavorites), isOn: $favorite).toggleStyle(.checkbox)
                 HStack {
@@ -374,6 +390,9 @@ struct AddStationSheet: View {
             .padding(18)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.surface).shadow(color: .black.opacity(0.18), radius: 12, y: 8))
             .padding(.horizontal, 12).padding(.top, 76)
+            .accessibilityElement(children: .contain)
+            .accessibilityAddTraits(.isModal)
+            .onAppear { focused = true }
         }
     }
     func check() {
@@ -391,12 +410,14 @@ struct RenameSheet: View {
     @ObservedObject var model: AppModel
     let station: Station
     @State var name = ""
+    @FocusState var focused: Bool
     var body: some View {
         ZStack(alignment: .top) {
-            Color.black.opacity(0.15).ignoresSafeArea().onTapGesture { model.renaming = nil }
+            Color.black.opacity(0.15).ignoresSafeArea().onTapGesture { model.renaming = nil }.accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 12) {
                 Text(L.t(.rename)).font(.system(size: 15, weight: .semibold))
-                TextField(station.name, text: $name).textFieldStyle(.roundedBorder).onAppear { name = station.displayName }
+                TextField(station.name, text: $name).textFieldStyle(.roundedBorder).focused($focused)
+                    .accessibilityLabel(L.t(.name)).onAppear { name = station.displayName; focused = true }
                 HStack {
                     Spacer()
                     Button(L.t(.cancel)) { model.renaming = nil }.buttonStyle(FieldButtonStyle()).keyboardShortcut(.cancelAction)
@@ -407,6 +428,8 @@ struct RenameSheet: View {
             .padding(18)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.surface).shadow(color: .black.opacity(0.18), radius: 12, y: 8))
             .padding(.horizontal, 12).padding(.top, 120)
+            .accessibilityElement(children: .contain)
+            .accessibilityAddTraits(.isModal)
         }
     }
 }
@@ -434,7 +457,7 @@ struct ToastView: View {
         Text(verbatim: text).font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.ink)
             .padding(.horizontal, 12).padding(.vertical, 8)
             .background(Capsule().fill(Theme.accent).shadow(color: .black.opacity(0.15), radius: 6, y: 3))
-            .accessibilityAddTraits(.updatesFrequently)
+            .accessibilityAddTraits(.isStaticText)
     }
 }
 

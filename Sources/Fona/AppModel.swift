@@ -97,7 +97,10 @@ final class AppModel: ObservableObject {
         try? player.start()
         station.onState = { [weak self] s in Task { @MainActor in self?.show(s) } }
         station.onTitle = { [weak self] t in Task { @MainActor in self?.title = t } }
-        news.onActive = { [weak self] on in self?.newsActive = on }
+        news.onActive = { [weak self] on in
+            self?.newsActive = on
+            announce(on ? L.t(.newsOnAir) : L.f(.backTo, self?.current?.displayName ?? "Fona"))
+        }
         news.log = { log.notice("\($0, privacy: .public)"); FileLog.shared.write($0) }
         FileLog.shared.write("start Fona \(version) (\(build))")
         if AppUpdater.translocated { notice = L.t(.moveToApplications) }
@@ -157,7 +160,9 @@ final class AppModel: ObservableObject {
         news.program(playing: s == .playing, url: current?.url)
         switch s {
         case .playing: player.setPlaying(true)
+        case .reconnecting(let n) where n == 1: announce(L.f(.reconnecting, n, StationPlayer.defaultRetryDelays.count))
         case .failed(let r): player.setPlaying(false); log.error("stream failed: \(r.code, privacy: .public)")
+            announce(Messages.text(r, L.language))
             FileLog.shared.write("stream failed: \(r.code)")
         default: break
         }
@@ -337,6 +342,7 @@ final class AppModel: ObservableObject {
 
     func showToast(_ text: String) {
         toast = text
+        announce(text)
         Task { try? await Task.sleep(nanoseconds: 4_000_000_000); if self.toast == text { self.toast = nil } }
     }
 

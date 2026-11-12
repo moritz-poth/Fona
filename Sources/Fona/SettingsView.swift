@@ -29,14 +29,14 @@ struct SettingsView: View {
                     row(L.t(.newsStation)) { Text(verbatim: "Deutschlandfunk").foregroundStyle(Theme.text2) }
                     divider
                     row(L.t(.scheduleLabel), hint: L.t(.scheduleHint)) {
-                        dropdown(settings.newsSchedule == .hourly ? L.t(.hourly) : L.t(.hourlyAndHalf)) {
+                        dropdown(settings.newsSchedule == .hourly ? L.t(.hourly) : L.t(.hourlyAndHalf), label: L.t(.scheduleLabel)) {
                             Button(L.t(.hourly)) { settings.newsSchedule = .hourly }
                             Button(L.t(.hourlyAndHalf)) { settings.newsSchedule = .hourlyAndHalf }
                         }
                     }
                     divider
                     row(L.t(.maxDuration)) {
-                        dropdown(L.f(.minutes, settings.newsMaxMinutes)) {
+                        dropdown(L.f(.minutes, settings.newsMaxMinutes), label: L.t(.maxDuration)) {
                             ForEach(3...10, id: \.self) { m in Button(L.f(.minutes, m)) { settings.newsMaxMinutes = m } }
                         }
                     }
@@ -53,7 +53,7 @@ struct SettingsView: View {
                     row(L.t(.launchAtLogin)) { FonaSwitch(isOn: $settings.launchAtLogin, label: L.t(.launchAtLogin)) }
                     divider
                     row(L.t(.language)) {
-                        dropdown(languageName(settings.language)) {
+                        dropdown(languageName(settings.language), label: L.t(.language)) {
                             ForEach(AppSettings.Language.allCases, id: \.self) { l in Button(languageName(l)) { settings.language = l } }
                         }
                     }
@@ -140,7 +140,7 @@ struct SettingsView: View {
     }
 
     /// Dropdown in text-field style (radius 6, light outline) – user request 2026-11-11.
-    func dropdown(_ value: String, @ViewBuilder items: () -> some View) -> some View {
+    func dropdown(_ value: String, label: String = "", @ViewBuilder items: () -> some View) -> some View {
         Menu { items() } label: {
             HStack(spacing: 6) {
                 Text(verbatim: value)
@@ -151,6 +151,8 @@ struct SettingsView: View {
             .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.field))
         }
         .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+        .accessibilityLabel(label)
+        .accessibilityValue(value)
     }
 
     func languageName(_ l: AppSettings.Language) -> String {
@@ -193,10 +195,10 @@ struct ProblemSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(L.t(.reportTitle)).font(.system(size: 15, weight: .semibold)).accessibilityAddTraits(.isHeader)
             Text(L.t(.reportDescription)).font(.system(size: 12, weight: .semibold))
-            TextEditor(text: $text).font(.system(size: 13)).frame(height: 120)
+            TextEditor(text: $text).font(.system(size: 13)).frame(height: 120).accessibilityLabel(L.t(.reportDescription))
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.field))
             Text(L.t(.reportContact)).font(.system(size: 12, weight: .semibold))
-            TextField("", text: $contact).textFieldStyle(.roundedBorder)
+            TextField("", text: $contact).textFieldStyle(.roundedBorder).accessibilityLabel(L.t(.reportContact))
             Toggle(L.t(.reportAttach), isOn: $attach).toggleStyle(.checkbox)
             HStack {
                 Spacer()

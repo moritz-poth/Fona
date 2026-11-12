@@ -414,3 +414,18 @@ Auf diesem Mac sind nur die Command Line Tools installiert, **kein Xcode**. Icon
 - **Lokaler Update-Test:** 0.1.0 → signiertes 0.1.1: ausgetauscht, neu gestartet. Abgewiesen: manipulierte ZIP („signature does not match“), signiertes 0.1.0 („no downgrades“), Symlink statt ZIP („no download“).
 - 2026-11-12 veröffentlicht: Repo https://github.com/moritz-poth/Fona (öffentlich, Historie vorher von Plugin-Statusdateien bereinigt), Prerelease **v0.1.0-beta.1** (universell, ZIP + Signatur; Selbsttest des Release-Builds = Issue #2). Live geprüft: API → neueste Version → ZIP + Signatur über NetGate inkl. Weiterleitung → Signatur gültig.
 - Offen: Ende-zu-Ende-Update in der App mit dem nächsten Prerelease; macOS-14-Test (P0-a).
+
+### P4 Barrierefreiheit – 2026-11-12
+Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
+1. Senderzeilen waren nur per Maus bedienbar → echte Schaltflächen (Tab/Leertaste mit Full Keyboard Access).
+2. Rechtsklick-Aktionen auch als VoiceOver-Aktionen (Favorit, Umbenennen, Entfernen).
+3. Suchtreffer: Abspielen und Stern als zwei getrennte Schaltflächen (vorher Knopf in Knopf).
+4. Schalter melden „Ein/Aus“ in der App-Sprache (vorher immer „On/Off“).
+5. Such-, Link-, Namens-, Beschreibungs- und Kontaktfeld beschriftet.
+6. „Sender hinzufügen“/„Umbenennen“: Fokus springt ins Feld, für VoiceOver als Dialog gekennzeichnet.
+7. Ansagen für VoiceOver: Hinweise, Fehler, Wiederverbinden, Prüfergebnis eines Links und **Wechsel zu den Nachrichten / zurück**.
+8. „Kontrast erhöhen“: kräftigere Rahmen und Grautexte (≥ 10:1) über die High-Contrast-Erscheinungsbilder. **Nicht sichtbar prüfbar:** macOS erzeugt diese Erscheinungsbilder nur bei eingeschalteter Systemeinstellung.
+9. Auswahlmenüs in den Einstellungen nennen ihren Zweck (z. B. „Zeitplan“), nicht nur den Wert.
+10. Schalter-Animation folgt „Bewegung reduzieren“.
+- Automatischer Prüflauf des Bedienungsbaums versucht und verworfen: SwiftUI baut ihn erst, wenn ein Hilfsprogramm (VoiceOver) von außen fragt.
+- Offen: Gegenprobe mit echtem VoiceOver (⌘F5) und „Kontrast erhöhen“ durch den Nutzer.

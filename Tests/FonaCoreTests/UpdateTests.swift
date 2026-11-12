@@ -42,3 +42,15 @@ func releasesJSON(_ entries: [(tag: String, pre: Bool, assets: [String], host: S
     #expect(!UpdateKey.verify(zip, signatureBase64: foreign))       // signed with another key
     #expect(!UpdateKey.verify(zip, signatureBase64: Data("garbage".utf8)))
 }
+
+/// The real path: GitHub API → newest release → zip + sig through NetGate (redirect to the asset host) → signature.
+@Test(.enabled(if: ProcessInfo.processInfo.environment["FONA_LIVE"] == "1"))
+func liveUpdatePath() async throws {
+    let (_, json) = try await NetGate.shared.fetch(Release.api, .update)
+    let r = try #require(UpdateCheck.newestRelease(fromJSON: json, includePrereleases: true))
+    let sig = try await NetGate.shared.fetch(try #require(r.signature), .update).1
+    let zip = try await NetGate.shared.fetch(r.zip, .update).1
+    #expect(zip.count > 1_000_000)
+    #expect(UpdateKey.verify(zip, signatureBase64: sig))
+    #expect(UpdateCheck.newestRelease(fromJSON: json, includePrereleases: false) == nil || !r.prerelease)
+}

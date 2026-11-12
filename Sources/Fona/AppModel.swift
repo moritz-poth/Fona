@@ -77,9 +77,9 @@ final class AppModel: ObservableObject {
     @Published var library = LibraryData()
     @Published var notice: String?
     @Published var tab = Tab.favorites
-    @Published var current: Station?
-    @Published var state: StationPlayer.State = .stopped
-    @Published var title = ""
+    @Published var current: Station? { didSet { if !Snapshot.requested { NowPlaying.update(self) } } }
+    @Published var state: StationPlayer.State = .stopped { didSet { if !Snapshot.requested { NowPlaying.update(self) } } }
+    @Published var title = "" { didSet { if !Snapshot.requested { NowPlaying.update(self) } } }
     @Published var newsActive = false
     var settingsObserver: AnyCancellable?
 
@@ -99,6 +99,7 @@ final class AppModel: ObservableObject {
         if result == .brokenReset { notice = L.t(.libraryReset) }
         if Snapshot.requested { DispatchQueue.main.async { Snapshot.run(self) }; return }
         try? player.start()
+        NowPlaying.start(self)
         station.onState = { [weak self] s in Task { @MainActor in self?.show(s) } }
         station.onTitle = { [weak self] t in Task { @MainActor in self?.title = t } }
         news.onActive = { [weak self] on in

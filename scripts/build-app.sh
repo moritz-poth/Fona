@@ -6,10 +6,14 @@ cd "$(dirname "$0")/.."
 VERSION=0.1.0; BUILD=1
 APP=dist/Fona.app; XPC="$APP/Contents/XPCServices/FonaDecoder.xpc"
 if [ "${1:-}" = "--fast" ]; then
-  swift build --product Fona && swift build --product FonaDecoder
+  swift build --product Fona
+  swift build --product FonaDecoder
   BIN_APP=.build/debug/Fona; BIN_XPC=.build/debug/FonaDecoder
 else
-  for a in arm64 x86_64; do swift build -c release --arch $a --product Fona; swift build -c release --arch $a --product FonaDecoder; done
+  for a in arm64 x86_64; do
+    swift build -c release --arch $a --product Fona
+    swift build -c release --arch $a --product FonaDecoder
+  done
   mkdir -p .build/universal
   lipo -create .build/arm64-apple-macosx/release/Fona .build/x86_64-apple-macosx/release/Fona -output .build/universal/Fona
   lipo -create .build/arm64-apple-macosx/release/FonaDecoder .build/x86_64-apple-macosx/release/FonaDecoder -output .build/universal/FonaDecoder

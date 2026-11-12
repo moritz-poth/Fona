@@ -43,9 +43,13 @@ public final class PCMRing: @unchecked Sendable {
         return done
     }
 
-    /// Render thread: copies up to `n` samples into `out`, returns how many; -1 if the lock is busy (never waits).
+    /// Render thread: copies up to `n` samples into `out`, returns how many; -1 if the lock stayed busy.
+    /// Never blocks: retries `trylock` for a few microseconds (the writer holds it only for one ≤ 4096-sample memcpy);
+    /// the soak test showed 3–7 misses per 30 min with a single try.
     func tryRead(_ out: UnsafeMutablePointer<Float>, _ n: Int) -> Int {
-        guard os_unfair_lock_trylock(&lock) else { return -1 }
+        var got = false
+        for _ in 0..<2000 where !got { got = os_unfair_lock_trylock(&lock) }
+        guard got else { return -1 }
         defer { os_unfair_lock_unlock(&lock) }
         let m = min(n, count)
         let first = min(m, capacity - readPos)
@@ -94,13 +98,13 @@ public final class Player: @unchecked Sendable {
                 for i in 0..<frames { left[i] = 0; right[i] = 0 }
                 return noErr
             }
-            var gotP = prog.tryRead(scratchP, frames * 2)
-            var gotN = nws.tryRead(scratchN, frames * 2)
-            if gotP < 0 || gotN < 0 { miss.pointee += 1 }
-            gotP = max(gotP, 0); gotN = max(gotN, 0)
             var x = pos.pointee
             let t = tgt.pointee
             let needN = t > 0 || x > 0
+            var gotP = prog.tryRead(scratchP, frames * 2)
+            var gotN = needN ? nws.tryRead(scratchN, frames * 2) : 0  // news ring only while it is heard
+            if gotP < 0 || gotN < 0 { miss.pointee += 1 }
+            gotP = max(gotP, 0); gotN = max(gotN, 0)
             if gotP < frames * 2 && (!needN || x < 1) { under.pointee += 1 }
             for i in 0..<frames {
                 if x < t { x = min(t, x + step) } else if x > t { x = max(t, x - step) }

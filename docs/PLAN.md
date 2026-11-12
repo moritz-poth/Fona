@@ -384,3 +384,11 @@ Auf diesem Mac sind nur die Command Line Tools installiert, **kein Xcode**. Icon
 - **Abweichung von §3:** Der TS-Zerleger läuft in der App, nicht im XPC-Dienst. Er ist reines Swift mit Grenzprüfung (im schlimmsten Fall ein Absturz, kein Speicherüberschreiben); Apples Decoder bleiben im Dienst ohne Rechte.
 - **Neu entschieden:** Streams mit Videospur (Fernsehsender wie „BBC News HD“) werden abgewiesen – sie luden 3–5 Mbit/s Video für nichts.
 - Live geprüft: 1LIVE (TS), FIP, BBC 6 Music (TS), NHK World und TRT Türkü (Packed Audio), Radio Italia (`METHOD=NONE` korrekt angenommen); NHK-Japan (fMP4) und BBC News HD (Video) abgewiesen. 0 Aussetzer.
+
+### P4 Oberfläche – 2026-11-12 · in Arbeit
+- `FonaCore/Library` (library.json nach §3.1, atomar, beim Laden geprüft, defekte Datei → `.broken`), `FonaCore/Directory/RadioBrowser` (Serverliste mit Ausweichen, eine Anfrage pro Land, Einträge geprüft, `homepage`/`favicon` nie gelesen).
+- App: `AppModel` (Einstellungen §3.2 geprüft gelesen, Wiedergabe über `StationPlayer` + XPC-Decoder), `PopoverView` (Favoriten + Zuletzt gehört, Alle Sender mit Suche/Länderfilter, Sender hinzufügen mit Probe, Umbenennen, Nachrichten-Kopfzeile), `SettingsView` (ein Fenster, passt sich dem Inhalt an), Texte de/en in `L10n.swift` (fehlende Übersetzung = Compilerfehler).
+- Prüfung per `--snapshot` (zeichnet alle Ansichten hell/dunkel mit Beispieldaten, speichert nichts): stimmt mit `design/canvas` überein. Korrigiert nach Sichtung: Menüs zeigten den macOS-Popup-Stil (Rahmen weg, Pfeil links), Nachrichten-Kopfzeile im Dunkelmodus dunkel auf dunkel, Logos in Großbuchstaben, „in 0 Sek.“ → „jetzt“.
+- **Fehler meinerseits behoben:** Der Entwickler-Start `--play-url` schrieb einen Testsender in die echte Senderliste des Nutzers → entfernt, Teststarts speichern nichts mehr.
+- P2-Dauertest (5 Sender × 30 min): 0 Dekodierfehler, aber 3–7 Sperr-Aussetzer je Sender → Tonausgabe versucht die Sperre jetzt einige µs lang erneut und liest den Nachrichtenpuffer nur, wenn er hörbar ist. Kontrolllauf läuft.
+- Offen in P4: Checklisten VoiceOver/Tastatur, Hover-Zustände, Menüleisten-Symbol aus `design/icon` statt SF Symbol, App-Icon (`.icns`).

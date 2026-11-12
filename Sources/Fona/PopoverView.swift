@@ -1,0 +1,436 @@
+import SwiftUI
+import FonaCore
+
+/// The menu bar window (design/canvas: Main, Nachrichten, AlleSender, Link).
+struct PopoverView: View {
+    @ObservedObject var model: AppModel
+    @ObservedObject var settings: AppSettings
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                if model.newsActive { NewsHeader(model: model) } else { Header(model: model) }
+                NewsRow(model: model, settings: settings)
+                SegmentPicker(tab: $model.tab)
+                if let n = model.notice { NoticeCard(text: n) { model.notice = nil } }
+                if model.tab == .favorites { FavoritesList(model: model) } else { AllStations(model: model, settings: settings) }
+            }
+            if model.addSheet { AddStationSheet(model: model).transition(.move(edge: .top)) }
+            if let r = model.renaming { RenameSheet(model: model, station: r) }
+            if let t = model.toast { ToastView(text: t).padding(.top, 8) }
+        }
+        .frame(width: 360, height: 600)
+        .background(Theme.bg)
+        .foregroundStyle(Theme.text)
+        .font(.system(size: 13))
+    }
+}
+
+struct Header: View {
+    @ObservedObject var model: AppModel
+    var body: some View {
+        HStack(spacing: 12) {
+            StationLogo(initials: model.current?.initials ?? "F", size: 48, active: model.isPlaying)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: model.current?.displayName ?? "Fona").font(.system(size: 14, weight: .semibold)).lineLimit(1)
+                Text(verbatim: model.statusLine).foregroundStyle(Theme.text2).lineLimit(1).truncationMode(.middle)
+            }
+            Spacer(minLength: 0)
+            PlayButton(model: model)
+            GearMenu()
+        }
+        .padding(16)
+        .background(Theme.surface)
+        .overlay(alignment: .bottom) { Theme.border.frame(height: 1) }
+    }
+}
+
+struct NewsHeader: View {
+    @ObservedObject var model: AppModel
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                StationLogo(initials: "DLF", size: 48, active: true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(L.language == .de ? "NACHRICHTEN" : "NEWS").font(.system(size: 10, weight: .bold)).tracking(0.4)
+                        .foregroundStyle(Theme.bg).padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Theme.text))
+                    Text(verbatim: "Deutschlandfunk").font(.system(size: 14, weight: .semibold))
+                }
+                Spacer(minLength: 0)
+                PlayButton(model: model)
+            }
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .semibold)).accessibilityHidden(true)
+                Text(verbatim: L.f(.newsBackTo, model.current?.displayName ?? "")).lineLimit(1)
+                Spacer()
+                Button(L.t(.backNow)) { model.newsActive = false }.buttonStyle(FieldButtonStyle())
+            }
+            .foregroundStyle(Theme.text2)
+        }
+        .foregroundStyle(Theme.text)
+        .padding(16)
+        .background(Theme.soft)
+    }
+}
+
+struct PlayButton: View {
+    @ObservedObject var model: AppModel
+    var body: some View {
+        Button { model.togglePlay() } label: {
+            Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
+                .font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.ink)
+                .frame(width: 40, height: 40).background(Circle().fill(Theme.accent))
+        }
+        .buttonStyle(.plain)
+        .disabled(model.current == nil)
+        .accessibilityLabel(model.isPlaying ? L.t(.pause) : L.t(.play))
+        .help(model.isPlaying ? L.t(.pause) : L.t(.play))
+    }
+}
+
+struct GearMenu: View {
+    var body: some View {
+        Menu {
+            SettingsLink { Text(L.t(.settings) + " …") }
+            Divider()
+            Button(L.t(.quit)) { NSApp.terminate(nil) }
+        } label: {
+            Image(systemName: "gearshape").font(.system(size: 15)).foregroundStyle(Theme.text2)
+        }
+        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+        .accessibilityLabel(L.t(.settingsButton))
+        .help(L.t(.settingsButton))
+        .simultaneousGesture(TapGesture().onEnded { NSApp.activate(ignoringOtherApps: true) })
+    }
+}
+
+struct NewsRow: View {
+    @ObservedObject var model: AppModel
+    @ObservedObject var settings: AppSettings
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "newspaper").font(.system(size: 16)).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L.t(.newsSwitch)).fontWeight(.semibold)
+                Text(verbatim: model.newsActive ? L.t(.newsNow) : L.f(.newsNext, model.nextNewsTime))
+                    .font(.system(size: 12)).foregroundStyle(Theme.text2)
+            }
+            Spacer()
+            FonaSwitch(isOn: $settings.newsEnabled, label: L.t(.newsSwitch))
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Theme.surface))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border))
+        .padding([.horizontal, .top], 12)
+    }
+}
+
+struct SegmentPicker: View {
+    @Binding var tab: AppModel.Tab
+    var body: some View {
+        HStack(spacing: 0) {
+            seg(.favorites, L.t(.favorites))
+            seg(.all, L.t(.allStations))
+        }
+        .padding(2)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.segBg))
+        .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 6)
+    }
+    func seg(_ t: AppModel.Tab, _ title: String) -> some View {
+        Button { tab = t } label: {
+            Text(title).fontWeight(tab == t ? .semibold : .regular).frame(maxWidth: .infinity).frame(height: 26)
+                .background(RoundedRectangle(cornerRadius: 6).fill(tab == t ? Theme.segOn : .clear)
+                    .shadow(color: .black.opacity(tab == t ? 0.12 : 0), radius: 1, y: 1))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(tab == t ? .isSelected : [])
+    }
+}
+
+struct StationRow: View {
+    @ObservedObject var model: AppModel
+    let station: Station
+    var trailing: String?
+    var body: some View {
+        let isCurrent = model.current?.url == station.url && model.isPlaying
+        HStack(spacing: 10) {
+            StationLogo(initials: station.initials, active: isCurrent)
+            Text(verbatim: station.displayName).fontWeight(isCurrent ? .semibold : .regular).lineLimit(1).truncationMode(.middle)
+            Spacer(minLength: 4)
+            if isCurrent {
+                Image(systemName: "waveform").accessibilityLabel(L.t(.playing))
+            } else if let trailing {
+                Text(verbatim: trailing).font(.system(size: 11)).foregroundStyle(Theme.text2)
+            }
+        }
+        .padding(.horizontal, 8).frame(height: 40)
+        .background(RoundedRectangle(cornerRadius: 7).fill(isCurrent ? Theme.soft : .clear))
+        .contentShape(Rectangle())
+        .onTapGesture { model.play(station) }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { model.play(station) }
+        .contextMenu {
+            Button(model.library.isFavorite(station.id) ? L.t(.favoriteRemove) : L.t(.favoriteAdd)) { model.toggleFavorite(station) }
+            Button(L.t(.rename)) { model.renaming = station }
+            Button(L.t(.remove), role: .destructive) { model.remove(station) }
+        }
+    }
+}
+
+struct FavoritesList: View {
+    @ObservedObject var model: AppModel
+    var body: some View {
+        List {
+            if model.library.favoriteStations.isEmpty {
+                Text(L.t(.noFavorites)).foregroundStyle(Theme.text2).listRowSeparator(.hidden)
+            }
+            ForEach(model.library.favoriteStations) { s in
+                StationRow(model: model, station: s).listRowInsets(EdgeInsets(top: 0, leading: 6, bottom: 0, trailing: 6)).listRowSeparator(.hidden)
+            }
+            .onMove { model.moveFavorites($0, $1) }
+            let recent = model.library.historyStations
+            if !recent.isEmpty {
+                Text(L.t(.recentlyPlayed)).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.text2)
+                    .padding(.top, 8).listRowSeparator(.hidden).accessibilityAddTraits(.isHeader)
+                ForEach(recent) { s in
+                    HStack(spacing: 0) {
+                        StationRow(model: model, station: s, trailing: relative(s))
+                        Button { model.toggleFavorite(s) } label: { Image(systemName: "star").foregroundStyle(Theme.text2) }
+                            .buttonStyle(.plain).frame(width: 24, height: 24)
+                            .accessibilityLabel("\(s.displayName) – \(L.t(.favoriteAdd))")
+                    }
+                    .listRowInsets(EdgeInsets(top: 0, leading: 6, bottom: 0, trailing: 10)).listRowSeparator(.hidden)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+    }
+
+    func relative(_ s: Station) -> String {
+        guard let d = model.library.history.first(where: { $0.id == s.id })?.playedAt else { return "" }
+        let f = RelativeDateTimeFormatter()
+        f.locale = Locale(identifier: L.language.rawValue)
+        f.unitsStyle = .short
+        f.dateTimeStyle = .named
+        let now = Date()
+        return now.timeIntervalSince(d) < 60 ? f.localizedString(fromTimeInterval: 0) : f.localizedString(for: min(d, now), relativeTo: now)
+    }
+}
+
+struct AllStations: View {
+    @ObservedObject var model: AppModel
+    @ObservedObject var settings: AppSettings
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(Theme.text2).accessibilityHidden(true)
+                    TextField(L.t(.searchPlaceholder), text: $model.query).textFieldStyle(.plain)
+                }
+                .padding(.horizontal, 8).frame(height: 28)
+                .background(RoundedRectangle(cornerRadius: 7).fill(Theme.surface))
+                .overlay(RoundedRectangle(cornerRadius: 7).stroke(Theme.field))
+                CountryMenu(settings: settings) { model.scheduleSearch() }
+                Button { model.addSheet = true } label: { Image(systemName: "plus").frame(width: 14, height: 14) }
+                    .buttonStyle(FieldButtonStyle()).accessibilityLabel(L.t(.addStation)).help(L.t(.addStation))
+            }
+            .padding(.horizontal, 12).padding(.bottom, 8)
+            Group {
+                if model.searching { ProgressView().controlSize(.small).padding() }
+                else if let e = model.searchError { Text(verbatim: e).foregroundStyle(Theme.text2).padding() }
+                else if model.query.trimmingCharacters(in: .whitespaces).count < 2 { Text(L.t(.searchHint)).foregroundStyle(Theme.text2).padding() }
+                else if model.results.isEmpty { Text(L.t(.noResults)).foregroundStyle(Theme.text2).padding() }
+                else {
+                    Text(verbatim: L.f(.stationCount, model.results.count) + " · " + L.t(.sortedByPopularity))
+                        .font(.system(size: 11)).foregroundStyle(Theme.text2).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20)
+                    List(model.results) { r in ResultRow(model: model, result: r).listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 6, bottom: 0, trailing: 10)) }
+                        .listStyle(.plain).scrollContentBackground(.hidden)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+struct ResultRow: View {
+    @ObservedObject var model: AppModel
+    let result: RadioBrowser.Result
+    var body: some View {
+        let fav = model.isFavorite(url: result.url)
+        let s = result.station()
+        HStack(spacing: 10) {
+            StationLogo(initials: s.initials, active: model.current?.url == result.url && model.isPlaying)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(verbatim: result.name).lineLimit(1)
+                Text(verbatim: meta).font(.system(size: 11)).foregroundStyle(Theme.text2).lineLimit(1)
+            }
+            Spacer(minLength: 4)
+            Button { model.toggleFavorite(s) } label: {
+                Image(systemName: fav ? "star.fill" : "star").foregroundStyle(fav ? Theme.switchOn : Theme.text2)
+            }
+            .buttonStyle(.plain).frame(width: 24, height: 24)
+            .accessibilityLabel("\(result.name) – \(fav ? L.t(.favoriteRemove) : L.t(.favoriteAdd))")
+        }
+        .frame(height: 40).padding(.horizontal, 8)
+        .contentShape(Rectangle())
+        .onTapGesture { model.play(s) }
+    }
+    var meta: String {
+        var parts: [String] = []
+        if let c = result.countryCode { parts.append(L.country(c)) }
+        if let tag = result.tags.split(separator: ",").first { parts.append(String(tag)) }
+        if result.bitrate > 0 { parts.append("\(result.bitrate) kbit/s") }
+        return parts.joined(separator: " · ")
+    }
+}
+
+struct CountryMenu: View {
+    @ObservedObject var settings: AppSettings
+    var compact = false
+    var changed: () -> Void
+    static let common = ["DE", "AT", "CH", "FR", "IT", "NL", "BE", "LU", "DK", "PL", "CZ", "ES", "GB", "US"]
+    var body: some View {
+        Menu {
+            Button(L.t(.worldwide)) { settings.countries = []; changed() }
+            Divider()
+            ForEach(Self.common, id: \.self) { c in
+                Button { toggle(c) } label: {
+                    if settings.countries.contains(c) { Label(L.country(c), systemImage: "checkmark") } else { Text(L.country(c)) }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                if compact {
+                    Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
+                } else {
+                    Text(verbatim: settings.countries.isEmpty ? L.t(.worldwide) : settings.countries.prefix(3).joined(separator: ", "))
+                    Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
+                }
+            }
+            .foregroundStyle(Theme.text)
+            .padding(.horizontal, compact ? 6 : 8).frame(height: compact ? 24 : 28)
+            .background(RoundedRectangle(cornerRadius: 7).fill(Theme.surface))
+            .overlay(RoundedRectangle(cornerRadius: 7).stroke(Theme.field))
+        }
+        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+        .accessibilityLabel(L.t(.countries))
+    }
+    func toggle(_ c: String) {
+        if let i = settings.countries.firstIndex(of: c) { settings.countries.remove(at: i) } else if settings.countries.count < 20 { settings.countries.append(c) }
+        changed()
+    }
+}
+
+struct AddStationSheet: View {
+    @ObservedObject var model: AppModel
+    @State var url = ""
+    @State var name = ""
+    @State var favorite = true
+    @State var result: AppModel.ProbeResult?
+    @State var checking = false
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.black.opacity(0.15).ignoresSafeArea().onTapGesture { model.addSheet = false }
+            VStack(alignment: .leading, spacing: 14) {
+                Text(L.t(.addTitle)).font(.system(size: 15, weight: .semibold)).accessibilityAddTraits(.isHeader)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L.t(.streamLink)).font(.system(size: 12, weight: .semibold))
+                    TextField("https://", text: $url).textFieldStyle(.roundedBorder)
+                        .onSubmit(check).onChange(of: url) { _, _ in result = nil }
+                    if checking { Text(L.t(.checking)).font(.system(size: 12)).foregroundStyle(Theme.text2) }
+                    switch result {
+                    case .ok(let d)?: Label { Text(verbatim: L.f(.linkOK, d)) } icon: { Image(systemName: "checkmark") }
+                        .font(.system(size: 12)).foregroundStyle(Color(nsColor: Theme.rgb(0x2F6B5E)))
+                    case .refused(let m)?: Label { Text(verbatim: m) } icon: { Image(systemName: "xmark.octagon") }
+                        .font(.system(size: 12)).foregroundStyle(.red)
+                    case nil: EmptyView()
+                    }
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L.t(.name)).font(.system(size: 12, weight: .semibold))
+                    TextField("", text: $name).textFieldStyle(.roundedBorder)
+                }
+                Toggle(L.t(.addToFavorites), isOn: $favorite).toggleStyle(.checkbox)
+                HStack {
+                    Spacer()
+                    Button(L.t(.cancel)) { model.addSheet = false }.buttonStyle(FieldButtonStyle()).keyboardShortcut(.cancelAction)
+                    if case .ok? = result {
+                        Button(L.t(.add)) { model.addCustom(url: url, name: name, favorite: favorite); model.addSheet = false }
+                            .buttonStyle(FieldButtonStyle(filled: true)).keyboardShortcut(.defaultAction)
+                    } else {
+                        Button(L.t(.add)) { check() }.buttonStyle(FieldButtonStyle(filled: true)).keyboardShortcut(.defaultAction)
+                            .disabled(url.isEmpty || checking)
+                    }
+                }
+            }
+            .padding(18)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.surface).shadow(color: .black.opacity(0.18), radius: 12, y: 8))
+            .padding(.horizontal, 12).padding(.top, 76)
+        }
+    }
+    func check() {
+        let u = url.trimmingCharacters(in: .whitespaces)
+        checking = true; result = nil
+        Task {
+            let r = await model.probe(u)
+            checking = false; result = r
+            if case .ok = r, name.isEmpty, case .success(let c) = URLPolicy.check(u, .stream) { name = c.host }
+        }
+    }
+}
+
+struct RenameSheet: View {
+    @ObservedObject var model: AppModel
+    let station: Station
+    @State var name = ""
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.black.opacity(0.15).ignoresSafeArea().onTapGesture { model.renaming = nil }
+            VStack(alignment: .leading, spacing: 12) {
+                Text(L.t(.rename)).font(.system(size: 15, weight: .semibold))
+                TextField(station.name, text: $name).textFieldStyle(.roundedBorder).onAppear { name = station.displayName }
+                HStack {
+                    Spacer()
+                    Button(L.t(.cancel)) { model.renaming = nil }.buttonStyle(FieldButtonStyle()).keyboardShortcut(.cancelAction)
+                    Button(L.t(.done)) { model.rename(station, name); model.renaming = nil }
+                        .buttonStyle(FieldButtonStyle(filled: true)).keyboardShortcut(.defaultAction)
+                }
+            }
+            .padding(18)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.surface).shadow(color: .black.opacity(0.18), radius: 12, y: 8))
+            .padding(.horizontal, 12).padding(.top, 120)
+        }
+    }
+}
+
+struct NoticeCard: View {
+    let text: String
+    let close: () -> Void
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "exclamationmark.triangle").accessibilityHidden(true)
+            Text(verbatim: text).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Button { close() } label: { Image(systemName: "xmark") }.buttonStyle(.plain).accessibilityLabel(L.t(.done))
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Theme.surface))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border))
+        .padding(.horizontal, 12).padding(.bottom, 6)
+    }
+}
+
+struct ToastView: View {
+    let text: String
+    var body: some View {
+        Text(verbatim: text).font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.ink)
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .background(Capsule().fill(Theme.accent).shadow(color: .black.opacity(0.15), radius: 6, y: 3))
+            .accessibilityAddTraits(.updatesFrequently)
+    }
+}

@@ -41,11 +41,14 @@ final class Radio: ObservableObject {
     @Published var status = "–"
     @Published var title = ""
     let player = Player()
-    var task: Task<Void, Never>?
+    lazy var station = StationPlayer(ring: player.program) { DecoderClient() }
+    var current = ""
 
     init() {
         try? player.start()
-        // developer launch arguments: --autoplay <index> [--mute] (P2 checks without clicking)
+        station.onState = { [weak self] s in Task { @MainActor in self?.show(s) } }
+        station.onTitle = { [weak self] t in Task { @MainActor in self?.title = t } }
+        // developer launch arguments: --autoplay <index> [--mute] (checks without clicking)
         let args = CommandLine.arguments
         if let i = args.firstIndex(of: "--autoplay"), i + 1 < args.count, let n = Int(args[i + 1]), Radio.testStations.indices.contains(n) {
             if args.contains("--mute") { player.volume = 0 }
@@ -54,53 +57,27 @@ final class Radio: ObservableObject {
     }
 
     func play(_ s: Station) {
-        stop()
-        status = "Verbinde mit \(s.name) …"
-        let player = self.player
-        task = Task.detached { [weak self] in
-            let decoder = DecoderClient()
-            defer { decoder.close() }
-            do {
-                for try await e in try await StreamSource.open(s.url) {
-                    try Task.checkCancellation()
-                    switch e {
-                    case .format(let f):
-                        let ok = decoder.open(f)
-                        log.notice("format \(String(describing: f), privacy: .public) decoder service open=\(ok)")
-                    case .title(let t): await MainActor.run { self?.title = t }
-                    case .frames(let d):
-                        let before = decoder.restarts
-                        guard let pcm = decoder.decode(d) else { throw Rejection.notAudio }
-                        if decoder.restarts != before { log.notice("decoder service restarted (\(decoder.restarts)), still playing") }
-                        var rest = pcm[...]
-                        while !rest.isEmpty {
-                            let n = player.program.write(Array(rest))
-                            rest = rest.dropFirst(n)
-                            if !rest.isEmpty { try await Task.sleep(nanoseconds: 50_000_000) }
-                        }
-                        if player.program.fillSeconds >= 1.5 {
-                            if !(await MainActor.run { self?.status.hasPrefix("▶︎") ?? true }) {
-                                log.notice("playing, buffer \(player.program.fillSeconds) s, service restarts \(decoder.restarts)")
-                            }
-                            player.setPlaying(true)
-                            await MainActor.run { self?.status = "▶︎ \(s.name)" }
-                        }
-                    }
-                }
-            } catch is CancellationError {
-            } catch let r as Rejection {
-                log.error("stream ended: \(r.code, privacy: .public)")
-                await MainActor.run { self?.status = Messages.text(r, .de) }
-            } catch {
-                await MainActor.run { self?.status = "Fehler: \(error)" }
-            }
-        }
+        current = s.name
+        title = ""
+        player.setPlaying(false)
+        station.play(s.url)
     }
 
     func stop() {
-        task?.cancel(); task = nil
+        station.stop()
         player.setPlaying(false)
-        player.program.clear()
         status = "–"; title = ""
+    }
+
+    func show(_ s: StationPlayer.State) {
+        log.notice("state \(String(describing: s), privacy: .public)")
+        switch s {
+        case .connecting: status = "Verbinde mit \(current) …"
+        case .buffering: status = "Puffere \(current) …"
+        case .playing: player.setPlaying(true); status = "▶︎ \(current)"
+        case .reconnecting(let n): status = "Verbindung verloren – neuer Versuch \(n) von \(StationPlayer.defaultRetryDelays.count)"
+        case .failed(let r): player.setPlaying(false); status = Messages.text(r, .de)
+        case .stopped: status = "–"
+        }
     }
 }

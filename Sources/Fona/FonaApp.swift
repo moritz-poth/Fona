@@ -4,14 +4,21 @@ import FonaCore
 
 @main
 struct FonaApp: App {
+    /// Template image from design/icon (disc with the F cut out); macOS tints it for light and dark menu bars.
+    static let menuBarIcon: NSImage = {
+        let img = Bundle.main.image(forResource: "MenuBarIcon") ?? NSImage(systemSymbolName: "radio", accessibilityDescription: "Fona")!
+        img.size = NSSize(width: 16, height: 16)
+        img.isTemplate = true
+        return img
+    }()
+
     @StateObject private var model = AppModel()
 
     var body: some Scene {
         MenuBarExtra {
             PopoverView(model: model, settings: model.settings)
         } label: {
-            Image(systemName: model.isPlaying ? "radio.fill" : "radio")
-                .accessibilityLabel("Fona")
+            Image(nsImage: Self.menuBarIcon).accessibilityLabel("Fona")
         }
         .menuBarExtraStyle(.window)
 

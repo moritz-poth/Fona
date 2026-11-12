@@ -392,3 +392,4 @@ Auf diesem Mac sind nur die Command Line Tools installiert, **kein Xcode**. Icon
 - **Fehler meinerseits behoben:** Der Entwickler-Start `--play-url` schrieb einen Testsender in die echte Senderliste des Nutzers → entfernt, Teststarts speichern nichts mehr.
 - P2-Dauertest (5 Sender × 30 min): 0 Dekodierfehler, aber 3–7 Sperr-Aussetzer je Sender → Tonausgabe versucht die Sperre jetzt einige µs lang erneut und liest den Nachrichtenpuffer nur, wenn er hörbar ist. Kontrolllauf läuft.
 - Offen in P4: Checklisten VoiceOver/Tastatur, Hover-Zustände, Menüleisten-Symbol aus `design/icon` statt SF Symbol, App-Icon (`.icns`).
+- Kontrolllauf 2026-11-12 nach Umbau (sperrfreier Ringpuffer, HLS-Startpuffer = 2 Segmente): 7 Sender × 15 min (radioeins, DLF, SWR3, 1LIVE MP3, FluxFM 44,1 kHz, FIP HLS, 1LIVE HLS) → **0 Aussetzer, 0 Dekodierfehler**. FIP-Puffer zeitweise nur 3 s – beobachten.

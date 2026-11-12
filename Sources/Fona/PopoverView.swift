@@ -38,12 +38,11 @@ struct Header: View {
                 Text(verbatim: model.statusLine).foregroundStyle(Theme.text2).lineLimit(1).truncationMode(.middle)
             }
             Spacer(minLength: 0)
+            VerticalVolume(settings: model.settings)
             PlayButton(model: model)
             GearMenu()
         }
-        .padding([.horizontal, .top], 16)
-        .padding(.bottom, 8)
-        VolumeRow(settings: model.settings).padding(.horizontal, 16).padding(.bottom, 10)
+        .padding(16)
         }
         .background(Theme.surface)
         .overlay(alignment: .bottom) { Theme.border.frame(height: 1) }
@@ -497,16 +496,41 @@ struct UpdateBanner: View {
     }
 }
 
-/// Small volume slider (user request 2026-11-12). Stored, applies to programme and news alike.
-struct VolumeRow: View {
+/// Volume: a slim vertical bar left of the play button with a small speaker below (user's pick 2026-11-12,
+/// style of proposal 9). Drag or click on the bar; arrow keys when focused; VoiceOver adjustable.
+struct VerticalVolume: View {
     @ObservedObject var settings: AppSettings
+    static let height: CGFloat = 30
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "speaker.fill").font(.system(size: 10)).foregroundStyle(Theme.text2).accessibilityHidden(true)
-            Slider(value: $settings.volume, in: 0...1).controlSize(.mini).tint(Theme.switchOn)
-                .accessibilityLabel(L.t(.volume))
-                .accessibilityValue("\(Int((settings.volume * 100).rounded())) %")
-            Image(systemName: "speaker.wave.3.fill").font(.system(size: 10)).foregroundStyle(Theme.text2).accessibilityHidden(true)
+        VStack(spacing: 3) {
+            ZStack(alignment: .bottom) {
+                Capsule().fill(Theme.segBg).frame(width: 4, height: Self.height)
+                Capsule().fill(Theme.switchOn).frame(width: 4, height: max(4, Self.height * CGFloat(settings.volume)))
+            }
+            .frame(width: 16, height: Self.height)  // wider hit area than the 4 pt bar
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 0).onChanged { g in
+                settings.volume = min(1, max(0, Double(1 - g.location.y / Self.height)))
+            })
+            Image(systemName: settings.volume == 0 ? "speaker.slash.fill" : "speaker.fill")
+                .font(.system(size: 9)).foregroundStyle(Theme.text2)
+                .onTapGesture { settings.volume = settings.volume == 0 ? 0.6 : 0 }  // quick mute
+        }
+        .focusable(true, interactions: .edit)
+        .onMoveCommand { d in
+            if d == .up || d == .right { settings.volume = min(1, settings.volume + 0.1) }
+            if d == .down || d == .left { settings.volume = max(0, settings.volume - 0.1) }
+        }
+        .help(L.t(.volume))
+        .accessibilityElement()
+        .accessibilityLabel(L.t(.volume))
+        .accessibilityValue("\(Int((settings.volume * 100).rounded())) %")
+        .accessibilityAdjustableAction { d in
+            switch d {
+            case .increment: settings.volume = min(1, settings.volume + 0.1)
+            case .decrement: settings.volume = max(0, settings.volume - 0.1)
+            @unknown default: break
+            }
         }
     }
 }

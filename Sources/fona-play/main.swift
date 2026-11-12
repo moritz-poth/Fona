@@ -35,6 +35,8 @@ do {
             print("format: \(f)")
         case .title(let t):
             print("title: \(t)")
+        case .discontinuity:
+            print("discontinuity")
         case .frames(let d):
             let pcm = decoder!.decode(d)
             frames += pcm.count / 2

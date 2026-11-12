@@ -55,7 +55,7 @@ public final class StationPlayer: @unchecked Sendable {
 
     /// Network-type problems are worth another try; everything else is a property of the link.
     public static func isRetryable(_ e: Error) -> Bool {
-        guard let r = e as? Rejection else { return !(e is CancellationError) && !(e is SourceError) }
+        guard let r = e as? Rejection else { return !(e is CancellationError) }
         switch r {
         case .network, .stalled, .tooSlow, .connectTimeout, .headerTimeout, .noAddress: return true
         case .httpStatus(let c): return c >= 500
@@ -90,6 +90,8 @@ public final class StationPlayer: @unchecked Sendable {
                         onState?(.buffering)
                     case .title(let t):
                         onTitle?(t)
+                    case .discontinuity:
+                        decoder.stop()  // the following .format event starts it again
                     case .frames(let d):
                         guard let pcm = decoder.pcm(d) else { throw Rejection.notAudio }
                         try await write(pcm)

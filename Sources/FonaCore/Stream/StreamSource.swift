@@ -5,10 +5,8 @@ public enum StreamEvent: Sendable {
     case format(FrameGuard.Format)
     case frames(Data)
     case title(String)
-}
-
-public enum SourceError: Error, Equatable {
-    case hlsNotYet  // shortcut: HLS reader arrives in P3
+    /// HLS discontinuity or format change: the decoder must start over.
+    case discontinuity
 }
 
 /// Opens a station URL: follows .pls/.m3u playlists (S1), detects the real format from the bytes (N8),
@@ -43,9 +41,12 @@ public enum StreamSource {
                 do { return try await open(entry, gate: gate, depth: 1) } catch { lastError = error }
             }
             throw lastError
-        case .hlsPlaylist, .mpegTS:
+        case .hlsPlaylist:
             r.cancel()
-            throw SourceError.hlsNotYet
+            return HlsReader.events(playlistURL: r.url.text, gate: gate)
+        case .mpegTS:
+            r.cancel()
+            throw Rejection.notAudio  // raw TS over HTTP without a playlist: not supported
         case .mp3, .adts:
             let format: FrameGuard.Format = kind == .mp3 ? .mp3 : .adts
             return AsyncThrowingStream { cont in

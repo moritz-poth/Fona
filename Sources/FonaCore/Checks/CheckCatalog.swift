@@ -24,7 +24,7 @@ struct TableResolver: Resolver {
 }
 
 public enum CheckCatalog {
-    public static var all: [Check] { attacks + parsing + content }
+    public static var all: [Check] { attacks + parsing + content + hls }
 
     public static func runAll() -> [CheckResult] { all.map { $0.execute() } }
 
@@ -339,6 +339,66 @@ public enum CheckCatalog {
         ]
     }
 
+    // MARK: HLS and MPEG-TS (PLAN S2)
+
+    static func hlsRefused(_ id: String, _ text: String) -> Check {
+        Check(id: id, area: "attack") {
+            if case .success(let p) = HlsPlaylist.parse(Data(text.utf8)) { return "accepted \(p)" }
+            return nil
+        }
+    }
+
+    static let mediaHead = "#EXTM3U\n#EXT-X-TARGETDURATION:4\n#EXT-X-MEDIA-SEQUENCE:100\n"
+
+    static var hls: [Check] {
+        [
+            hlsRefused("hls-aes", mediaHead + "#EXT-X-KEY:METHOD=AES-128,URI=\"k\"\n#EXTINF:4,\ns1.ts\n"),
+            hlsRefused("hls-sample-aes", mediaHead + "#EXT-X-KEY:METHOD=SAMPLE-AES,URI=\"k\"\n#EXTINF:4,\ns1.ts\n"),
+            hlsRefused("hls-session-key", "#EXTM3U\n#EXT-X-SESSION-KEY:METHOD=AES-128,URI=\"k\"\n#EXT-X-STREAM-INF:BANDWIDTH=128000\na.m3u8\n"),
+            hlsRefused("hls-fmp4", mediaHead + "#EXT-X-MAP:URI=\"init.mp4\"\n#EXTINF:4,\ns1.m4s\n"),
+            hlsRefused("hls-byterange", mediaHead + "#EXTINF:4,\n#EXT-X-BYTERANGE:999999999@0\ns1.ts\n"),
+            hlsRefused("hls-target-zero", "#EXTM3U\n#EXT-X-TARGETDURATION:0\n#EXTINF:4,\ns1.ts\n"),
+            hlsRefused("hls-target-huge", "#EXTM3U\n#EXT-X-TARGETDURATION:99999\n#EXTINF:4,\ns1.ts\n"),
+            hlsRefused("hls-negative-duration", mediaHead + "#EXTINF:-4,\ns1.ts\n"),
+            hlsRefused("hls-video-only-master", "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=3000000,CODECS=\"avc1.64001f,mp4a.40.2\"\nv.m3u8\n"),
+            hlsRefused("hls-not-a-playlist", "<html>hello</html>"),
+            hlsRefused("hls-too-many-segments", mediaHead + String(repeating: "#EXTINF:4,\ns.ts\n", count: 10_001)),
+            Check(id: "hls-key-none-ok", area: "parse") {
+                if case .success(.media) = HlsPlaylist.parse(Data((mediaHead + "#EXT-X-KEY:METHOD=NONE\n#EXTINF:4,\ns1.ts\n").utf8)) { return nil }
+                return "refused METHOD=NONE"
+            },
+            Check(id: "hls-master-choice", area: "parse") {
+                let text = "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=64000,CODECS=\"mp4a.40.5\"\nlo.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=102545,CODECS=\"mp4a.40.2\"\n96/seg.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=200189,CODECS=\"mp4a.40.2\"\n192/seg.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=3000000,CODECS=\"avc1.4d,mp4a.40.2\"\nvideo.m3u8\n"
+                guard case .success(.master(let v)) = HlsPlaylist.parse(Data(text.utf8)) else { return "not a master" }
+                return v.count == 3 && HlsPlaylist.choose(v)?.uri == "96/seg.m3u8" ? nil : "chose \(HlsPlaylist.choose(v)?.uri ?? "-") of \(v.count)"
+            },
+            Check(id: "hls-delta-skip", area: "parse") {
+                let text = mediaHead + "#EXT-X-SERVER-CONTROL:CAN-SKIP-UNTIL=24\n#EXT-X-SKIP:SKIPPED-SEGMENTS=50\n#EXTINF:4,\na.ts\n#EXT-X-DISCONTINUITY\n#EXTINF:4,\nb.ts\n"
+                guard case .success(.media(let m)) = HlsPlaylist.parse(Data(text.utf8)) else { return "refused" }
+                return m.canSkip && m.segments.map(\.sequence) == [150, 151] && m.segments[1].discontinuity ? nil : "\(m.segments)"
+            },
+            Check(id: "ts-adts", area: "parse") {
+                var d = TsDemuxer()
+                let es = (try? d.feed(TestMedia.tsSegment(streamType: 0x0F, payload: TestMedia.adtsFrames(20)))) ?? Data()
+                let all = es + d.flush()
+                return d.format == .adts && all == TestMedia.adtsFrames(20) ? nil : "format \(String(describing: d.format)), \(all.count) bytes"
+            },
+            Check(id: "ts-refuse-latm", area: "attack") {
+                var d = TsDemuxer()
+                do { _ = try d.feed(TestMedia.tsSegment(streamType: 0x11, payload: Data(count: 1000))); return "accepted LATM" } catch { return nil }
+            },
+            Check(id: "ts-refuse-video", area: "attack") {
+                var d = TsDemuxer()
+                do { _ = try d.feed(TestMedia.tsSegment(streamType: 0x0F, payload: TestMedia.adtsFrames(5), extraStreamType: 0x1B)); return "accepted video" } catch { return nil }
+            },
+            Check(id: "ts-garbage", area: "attack") {
+                var d = TsDemuxer()
+                let out = (try? d.feed(randomBytes(188 * 50, seed: 11))) ?? Data()
+                return out.isEmpty ? nil : "\(out.count) bytes from noise"
+            },
+        ]
+    }
+
     static func randomBytes(_ n: Int, seed: UInt64) -> Data {
         var x = seed, out = [UInt8]()
         out.reserveCapacity(n)
@@ -367,6 +427,40 @@ public enum TestMedia {
         Data([0x49, 0x44, 0x33, 4, 0, 0, UInt8(size >> 21 & 0x7F), UInt8(size >> 14 & 0x7F), UInt8(size >> 7 & 0x7F), UInt8(size & 0x7F)]
              + [UInt8](repeating: 0, count: size))
     }
+    /// One TS segment: PAT, PMT (audio PID 0x101 of `streamType`, optional second stream), PES packets with `payload`.
+    public static func tsSegment(streamType: UInt8, payload: Data, extraStreamType: UInt8? = nil) -> Data {
+        func packet(pid: Int, pusi: Bool, _ body: [UInt8]) -> [UInt8] {
+            var p: [UInt8] = [0x47, UInt8((pusi ? 0x40 : 0) | (pid >> 8)), UInt8(pid & 0xFF), 0x10]
+            p += body.prefix(184)
+            p += [UInt8](repeating: 0xFF, count: 188 - p.count)
+            return p
+        }
+        let pat: [UInt8] = [0x00, 0x00, 0xB0, 0x0D, 0x00, 0x01, 0xC1, 0x00, 0x00, 0x00, 0x01, 0xF0, 0x00, 0, 0, 0, 0]
+        var streams: [UInt8] = [streamType, 0xE1, 0x01, 0xF0, 0x00]
+        if let x = extraStreamType { streams = [x, 0xE1, 0x00, 0xF0, 0x00] + streams }
+        let secLen = 9 + streams.count + 4
+        let pmt: [UInt8] = [0x00, 0x02, 0xB0, UInt8(secLen), 0x00, 0x01, 0xC1, 0x00, 0x00, 0xE1, 0x01, 0xF0, 0x00] + streams + [0, 0, 0, 0]
+        var out = packet(pid: 0, pusi: true, pat) + packet(pid: 0x1000, pusi: true, pmt)
+        let pes: [UInt8] = [0x00, 0x00, 0x01, 0xC0, 0x00, 0x00, 0x80, 0x00, 0x00] + [UInt8](payload)
+        var rest = pes[...]
+        var first = true
+        while !rest.isEmpty {
+            // full packets only: pad the last one with an adaptation field so no 0xFF stuffing lands in the PES
+            let take = min(184, rest.count)
+            var p: [UInt8] = [0x47, UInt8((first ? 0x40 : 0) | 0x01), 0x01]
+            if take == 184 {
+                p += [0x10] + rest.prefix(184)
+            } else {
+                let af = 184 - take - 1
+                p += [0x30, UInt8(af)] + (af > 0 ? [0x00] + [UInt8](repeating: 0xFF, count: af - 1) : []) + rest.prefix(take)
+            }
+            out += p
+            rest = rest.dropFirst(take)
+            first = false
+        }
+        return Data(out)
+    }
+
     public static func tsPackets(_ n: Int) -> Data {
         var d = Data()
         for _ in 0..<n { d += [0x47, 0x1F, 0xFF, 0x10] + [UInt8](repeating: 0xFF, count: 184) }

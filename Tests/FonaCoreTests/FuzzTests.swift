@@ -120,3 +120,17 @@ struct Rng {
         _ = PlaylistParser.entries(Data(bytes))
     }
 }
+
+@Test func fuzzHlsAndTs() {
+    var r = Rng(x: 8)
+    let playlists = [CheckCatalog.mediaHead + "#EXT-X-SERVER-CONTROL:CAN-SKIP-UNTIL=24\n#EXTINF:4,\na.ts\n#EXT-X-DISCONTINUITY\n#EXTINF:4,\nb.ts\n",
+                     "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=102545,CODECS=\"mp4a.40.2\"\n96/seg.m3u8\n"].map { [UInt8]($0.utf8) }
+    let segs = [TestMedia.tsSegment(streamType: 0x0F, payload: TestMedia.adtsFrames(12)), TestMedia.tsSegment(streamType: 0x03, payload: TestMedia.mp3Frames(6))].map { [UInt8]($0) }
+    for i in 0..<fuzzRounds / 4 {
+        _ = HlsPlaylist.parse(Data(r.mutate(playlists[i % 2])))
+        var d = TsDemuxer()
+        let input = i % 3 == 0 ? r.bytes(r.int(4000)) : r.mutate(segs[i % 2])
+        _ = try? d.feed(Data(input))
+        _ = d.flush()
+    }
+}

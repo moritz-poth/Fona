@@ -378,3 +378,9 @@ Auf diesem Mac sind nur die Command Line Tools installiert, **kein Xcode**. Icon
 - Geprüft: Dekodierung gegen ffmpeg – AAC bitgenau, MP3 größte Abweichung 0,00002 (≈ −94 dB). Sandbox-App spielt Deutschlandfunk über NetGate + XPC-Decoder; 3 gewaltsame Abstürze des Decoders hintereinander → Wiedergabe läuft weiter.
 - Fund: Der erste Ringpuffer kopierte Sample für Sample unter Sperre → die Tonausgabe fand die Sperre ~2×/s belegt (Aussetzer). Jetzt `memcpy` in 4096er-Stücken → 0 Aussetzer.
 - Offen: 30-min-Dauertest der 5 Sender (läuft), Mindestdurchsatz live, Wiederverbinden nach Netzabbruch (§5).
+
+### P3 HLS – 2026-11-12 · in Arbeit (Dauertest läuft)
+- Neu: `HlsPlaylist` (Master/Media, Variante: niedrigste ≥ 96 kbit/s, nur reine Audio-Codecs; abgewiesen: AES/SAMPLE-AES, Session-Key, fMP4, Byte-Ranges, Zieldauer außerhalb 1–30 s, > 10 000 Segmente), `HlsReader` (Start 3 Segmente vor der Live-Kante, Neuladen pro Zieldauer, Delta-Abruf `_HLS_skip=YES`, ≤ 4 Segment-Hosts, 404 überspringen, Discontinuity → Decoder neu), `TsDemuxer` (geprüfte Längen, ADTS/MP3, LATM abgewiesen).
+- **Abweichung von §3:** Der TS-Zerleger läuft in der App, nicht im XPC-Dienst. Er ist reines Swift mit Grenzprüfung (im schlimmsten Fall ein Absturz, kein Speicherüberschreiben); Apples Decoder bleiben im Dienst ohne Rechte.
+- **Neu entschieden:** Streams mit Videospur (Fernsehsender wie „BBC News HD“) werden abgewiesen – sie luden 3–5 Mbit/s Video für nichts.
+- Live geprüft: 1LIVE (TS), FIP, BBC 6 Music (TS), NHK World und TRT Türkü (Packed Audio), Radio Italia (`METHOD=NONE` korrekt angenommen); NHK-Japan (fMP4) und BBC News HD (Video) abgewiesen. 0 Aussetzer.

@@ -41,7 +41,7 @@ public enum Sniffer {
         return nil
     }
 
-    static func isTS(_ b: [UInt8]) -> Bool {
+    public static func isTS(_ b: [UInt8]) -> Bool {
         guard let start = b.prefix(188).firstIndex(of: 0x47), start + 4 * 188 < b.count else { return false }
         return (0..<5).allSatisfy { b[start + $0 * 188] == 0x47 }
     }

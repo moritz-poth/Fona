@@ -453,3 +453,4 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Lautstärke: kein dicker blauer Fokusrahmen mehr (eigene dünne Markierung, Tastatur geht weiter); Mausrad/Trackpad über dem Regler (1 Raste = 5 %, Rad hoch = lauter, auch bei „natürlichem Scrollen“).
 - Update-Hinweis: sitzt seit beta 3 am unteren Rand (Snapshot `6-update`); der Nutzer hatte ihn noch in beta 2 gesehen.
 - Anzeigenamen: Umbenennen gab es schon (Rechtsklick auf einen Sender); neu auch per Rechtsklick auf den Namen im Kopf. Handbuch ergänzt.
+- Veröffentlicht 2026-11-12: Prerelease **v0.1.0-beta.4** (letzter Sender im Kopf, Pegelbalken, Mausrad-Lautstärke, Umbenennen im Kopf). Vorher 1-Mio.-Fuzzing grün; API liefert beta.4, Downloads identisch mit dem Build.

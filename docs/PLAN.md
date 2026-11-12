@@ -211,7 +211,7 @@ titleRule: ^Nachrichten\b (ohne Groß/Klein) · scheduleWindow: ±90 s um :00 (u
 
 ### 6.3 Erkennung
 - **Start** durch (a) **Ton** innerhalb des Zeitplanfensters, oder (b) **Titel** passend zu `^Nachrichten\b` innerhalb des Zeitplanfensters. Der Zeitplan löst **nie allein** aus (ob doch, entscheidet P0-b).
-- **Ende** durch (a) Titel, der nicht mehr passt – **nur wenn** in dieser Episode ein passender Titel gesehen wurde; (b) sonst `newsMaxMinutes` (Standard 6 min); (c) „Jetzt zurück“; (d) Höchstdauer 12 min.
+- **Ende** durch (a) Titel, der nicht mehr passt – **nur wenn** in dieser Episode ein passender Titel gesehen wurde; (b) sonst `newsMaxMinutes` (Standard 10 min – Ausgaben dauern 5–10 min); (c) „Jetzt zurück“; (d) Höchstdauer 12 min.
 - **Wiedergabe:** Der Nachrichten-Ringpuffer (15 s PCM) liefert ab dem Tonbeginn bzw. 4 s vor dem Titelwechsel (Wert aus P0-b); 80-ms-Überblendung; zurück wird live aus dem Programm-Ringpuffer übergeblendet.
 
 ### 6.4 Zustandsautomat
@@ -280,7 +280,7 @@ Ergebnis als Toast; Bericht (A5) über NetGate (`report`) an den bestehenden Wor
 
 ## 10 Design-Referenz und Abweichungen
 - Ansichten: `design/canvas/` (Export aus dem Design-Canvas, vor P4): Favoriten, Nachrichten laufen, Alle Sender, Sender hinzufügen, Einstellungen, Dunkel; dazu leere Zustände, Fehlerkarte, Menüleisten-Symbol.
-- Export liegt in `design/canvas/project/*.dc.html` (Quelltext der Entwürfe, 2026-11-12). Beim Umsetzen in P4 angleichen: „Tuner“ → „Fona“; in den Einstellungen wird „Nachrichtensender“ ein fester Text („Deutschlandfunk“), das Menü „Erkennung“ entfällt, „Dauer“ heißt „Höchstdauer, falls kein Ende erkannt wird“ (3–10 min, Standard 6).
+- Export liegt in `design/canvas/project/*.dc.html` (Quelltext der Entwürfe, 2026-11-12). Beim Umsetzen in P4 angleichen: „Tuner“ → „Fona“; in den Einstellungen wird „Nachrichtensender“ ein fester Text („Deutschlandfunk“), das Menü „Erkennung“ entfällt, „Dauer“ heißt „Höchstdauer, falls kein Ende erkannt wird“ (3–10 min, Standard 10).
 - Icon: `design/icon/`.
 - Bewusste Abweichungen von `~/.claude/skills/moe-apps/SKILL.md`: eigener Look (Systemschrift, Pastell, hell/dunkel nach System); Einstellungen als ein gruppiertes Fenster; zwei Sprachen; Log und Berichtsablage im Sandbox-Container; Signatur ggf. mit eigenem Zertifikat. Übernommen: Updater-Ablauf, Ed25519, Support, Handbuch, About, Release-Ablauf, Datensicherheit.
 
@@ -393,3 +393,10 @@ Auf diesem Mac sind nur die Command Line Tools installiert, **kein Xcode**. Icon
 - P2-Dauertest (5 Sender × 30 min): 0 Dekodierfehler, aber 3–7 Sperr-Aussetzer je Sender → Tonausgabe versucht die Sperre jetzt einige µs lang erneut und liest den Nachrichtenpuffer nur, wenn er hörbar ist. Kontrolllauf läuft.
 - Offen in P4: Checklisten VoiceOver/Tastatur, Hover-Zustände, Menüleisten-Symbol aus `design/icon` statt SF Symbol, App-Icon (`.icns`).
 - Kontrolllauf 2026-11-12 nach Umbau (sperrfreier Ringpuffer, HLS-Startpuffer = 2 Segmente): 7 Sender × 15 min (radioeins, DLF, SWR3, 1LIVE MP3, FluxFM 44,1 kHz, FIP HLS, 1LIVE HLS) → **0 Aussetzer, 0 Dekodierfehler**. FIP-Puffer zeitweise nur 3 s – beobachten.
+
+### P5 Nachrichten – 2026-11-12 · Logik fertig, Live-Test bestanden
+- **Kalibrierung (10 h Mitschnitt):** Vor den Nachrichten kommt das **Zeitzeichen** – kurze Pieps im 1-s-Abstand, dann ein langer (≈ 0,75–0,8 s), alles ≈ 780 Hz. Die Stille danach schwankt (0,55–2,4 s) → nicht mehr verlangt. „Ton + Stille“ fand 9 von 13 Ausgaben, das Zeitzeichen-Muster **14 von 14, 0 Fehlalarme**. Nachts nur volle Stunde, ab 04:30 auch halbe → Standard-Zeitplan „volle und halbe Stunde“.
+- Gemessene Längen: halbe Stunde ≈ 5 min, volle Stunde 5–10 min (06:00/08:00 ≈ 10 min) → Höchstdauer ohne Nachrichten-Titel Standard 10 min.
+- `NewsLogic` (reiner Zustandsautomat, §6.4, Tests mit simulierter Uhr), `NewsWatcher` (stumme DLF-Kette, 15 s Gedächtnis, Wiedergabe ab dem ersten Piep, 80-ms-Blende), Prüfkatalog: synthetisches Zeitzeichen erkannt, Musik/Rauschen/Einzelton/Dauerton nicht.
+- **Live in der App** (stumm, Programm FluxFM): 09:30 – Rückkehr 1 s nach Titelwechsel (09:34:22 → 09:34:23); dabei Fehler gefunden: erster Titel nach dem Start löste mitten in der Sendung aus → behoben (erster Titel = Ausgangslage). 10:00 – **Umschaltung durch das Zeitzeichen** um 10:00:01,7 (vor dem Titel um 10:00:03), Wiedergabe ab 3,1 s zurück; Rückkehr 10:07:57, 1 s nach Titelwechsel.
+- Offen: Hörtest durch den Nutzer; Ende-Erkennung am Ton (Abschlussmelodie) für den seltenen Fall ohne Nachrichten-Titel; Auswertung des kompletten 24-h-Mitschnitts.

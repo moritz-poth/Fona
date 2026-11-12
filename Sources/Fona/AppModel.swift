@@ -33,8 +33,8 @@ final class AppSettings: ObservableObject {
     init() {
         newsEnabled = d.object(forKey: "newsEnabled") as? Bool ?? true
         newsSchedule = (d.string(forKey: "newsSchedule")).flatMap(Schedule.init(rawValue:)) ?? .hourlyAndHalf  // DLF: half hours from 04:30
-        let m = d.object(forKey: "newsMaxMinutes") as? Int ?? 6
-        newsMaxMinutes = (3...10).contains(m) ? m : 6
+        let m = d.object(forKey: "newsMaxMinutes") as? Int ?? 10  // bulletins last 5–10 min (measured 2026-11-12)
+        newsMaxMinutes = (3...10).contains(m) ? m : 10
         let region = Locale.current.region?.identifier
         let saved = (d.array(forKey: "countries") as? [String])?.filter { $0.count == 2 && $0.allSatisfy { $0.isASCII && $0.isUppercase } }
         countries = Array((saved ?? [region ?? "DE"]).prefix(20))

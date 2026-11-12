@@ -28,7 +28,7 @@ public struct NewsLogic: Sendable {
     public struct Config: Sendable {
         public var halfHours = true
         public var windowSeconds = 90.0
-        public var maxMinutes = 6.0
+        public var maxMinutes = 10.0
         public var hardMaxMinutes = 12.0
         public var cooldownMinutes = 10.0
         public var titleReplaySeconds = 4.0

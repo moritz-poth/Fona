@@ -4,3 +4,4 @@ dist/
 .DS_Store
 spikes/*/out/
 spikes/p0g/test.adts
+.omc/

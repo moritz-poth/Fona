@@ -8,6 +8,12 @@ Internet radio in your Mac's menu bar – with an automatic switch to the Deutsc
 
 *Deutsch:* Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die Nachrichten, blendet Fona dorthin über und danach zurück zu deinem Sender. Das Handbuch gibt es in der App auf Deutsch (Zahnrad → Handbuch).
 
+<p align="center">
+  <img src="assets/screenshots/favourites.png" width="250" alt="Favourites and Recently Played, with the news switch waiting for the next news">&nbsp;
+  <img src="assets/screenshots/news-dark.png" width="250" alt="News switch active: Deutschlandfunk news playing, then back to radioeins (dark mode)">&nbsp;
+  <img src="assets/screenshots/all-stations.png" width="250" alt="All Stations: search for jazz, filtered by country">
+</p>
+
 ## What it does
 - **Favourites and Recently Played** – your stations one click away, sorted by dragging.
 - **All Stations** – search more than 50,000 stations from [radio-browser.info](https://www.radio-browser.info), filtered by country.

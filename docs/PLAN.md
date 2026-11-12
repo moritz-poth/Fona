@@ -448,3 +448,8 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 ### Rückmeldung Nutzer 2026-11-12 (nach beta 3)
 - Nach dem Neustart steht der zuletzt gespielte Sender schon im Kopf (Play startet ihn), auch ohne „beim Start weiterspielen“.
 - Pegel-Animation (Vorschlag 4 „Echte Pegel“): neben dem laufenden Sender fünf Balken = die letzten fünf Messungen der echten Lautstärke (RMS im Render-Callback, vor der Lautstärke; −36…−8 dBFS → 3…14 pt, alle 0,08 s). Läuft nur bei offenem Fenster; mit „Bewegung reduzieren“ statisches Wellensymbol. Live: Musik 8–12 pt, Sprache 4–11 pt. `fona-play --levels` zeigt die Werte.
+
+### Rückmeldung Nutzer 2026-11-12 (Lautstärke, Namen)
+- Lautstärke: kein dicker blauer Fokusrahmen mehr (eigene dünne Markierung, Tastatur geht weiter); Mausrad/Trackpad über dem Regler (1 Raste = 5 %, Rad hoch = lauter, auch bei „natürlichem Scrollen“).
+- Update-Hinweis: sitzt seit beta 3 am unteren Rand (Snapshot `6-update`); der Nutzer hatte ihn noch in beta 2 gesehen.
+- Anzeigenamen: Umbenennen gab es schon (Rechtsklick auf einen Sender); neu auch per Rechtsklick auf den Namen im Kopf. Handbuch ergänzt.

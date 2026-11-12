@@ -37,6 +37,11 @@ struct Header: View {
                 Text(verbatim: model.current?.displayName ?? "Fona").font(.system(size: 14, weight: .semibold)).lineLimit(1)
                 Text(verbatim: model.statusLine).foregroundStyle(Theme.text2).lineLimit(1).truncationMode(.middle)
             }
+            .contextMenu {
+                if let s = model.current, model.library.station(s.id) != nil {
+                    Button(L.t(.rename)) { model.renaming = s }
+                }
+            }
             Spacer(minLength: 0)
             VerticalVolume(settings: model.settings)
             PlayButton(model: model)
@@ -501,12 +506,17 @@ struct UpdateBanner: View {
 struct VerticalVolume: View {
     @ObservedObject var settings: AppSettings
     static let height: CGFloat = 30
+    @FocusState var focused: Bool
+    @State var hovering = false
+    @State var wheelMonitor: Any?
     var body: some View {
         VStack(spacing: 3) {
             ZStack(alignment: .bottom) {
                 Capsule().fill(Theme.segBg).frame(width: 4, height: Self.height)
                 Capsule().fill(Theme.switchOn).frame(width: 4, height: max(4, Self.height * CGFloat(settings.volume)))
             }
+            // own slim focus mark instead of the thick system ring (user 2026-11-12)
+            .overlay(Capsule().stroke(Theme.switchOn.opacity(focused ? 0.6 : 0), lineWidth: 1).frame(width: 8, height: Self.height + 4))
             .frame(width: 16, height: Self.height)  // wider hit area than the 4 pt bar
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0).onChanged { g in
@@ -517,6 +527,20 @@ struct VerticalVolume: View {
                 .onTapGesture { settings.volume = settings.volume == 0 ? 0.6 : 0 }  // quick mute
         }
         .focusable(true, interactions: .edit)
+        .focusEffectDisabled()
+        .focused($focused)
+        .onHover { hovering = $0 }
+        .onAppear {
+            // mouse wheel / trackpad over the control changes the volume (SwiftUI has no wheel modifier on macOS 14)
+            guard wheelMonitor == nil else { return }
+            wheelMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { e in
+                guard hovering else { return e }
+                let dy = e.isDirectionInvertedFromDevice ? -e.scrollingDeltaY : e.scrollingDeltaY  // wheel up = louder
+                settings.volume = Self.wheel(settings.volume, dy, precise: e.hasPreciseScrollingDeltas)
+                return nil
+            }
+        }
+        .onDisappear { if let m = wheelMonitor { NSEvent.removeMonitor(m) }; wheelMonitor = nil }
         .onMoveCommand { d in
             if d == .up || d == .right { settings.volume = min(1, settings.volume + 0.1) }
             if d == .down || d == .left { settings.volume = max(0, settings.volume - 0.1) }
@@ -532,6 +556,11 @@ struct VerticalVolume: View {
             @unknown default: break
             }
         }
+    }
+
+    /// One wheel notch = 5 %; trackpads report pixels, 100 px = full range.
+    static func wheel(_ volume: Double, _ dy: CGFloat, precise: Bool) -> Double {
+        min(1, max(0, volume + Double(dy) * (precise ? 0.01 : 0.05)))
     }
 }
 

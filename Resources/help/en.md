@@ -8,7 +8,8 @@ Fona plays internet radio from the menu bar. When the news starts on Deutschland
 - The big button at the top pauses and resumes.
 
 ## Favourites and Recently Played
-- Drag favourites to sort them. Right-click a station to remove it from the favourites, rename it or remove it.
+- Drag favourites to sort them. Right-click a station to remove it from the favourites, rename it or remove it. You can also rename the playing station by right-clicking its name at the top.
+- Volume: the slim bar left of Play. Click or drag, turn the mouse wheel with the pointer over it, or use the arrow keys. Clicking the small speaker mutes.
 - **Recently Played** shows the last ten stations that are not favourites. The star next to one makes it a favourite.
 
 ## All Stations

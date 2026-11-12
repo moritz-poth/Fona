@@ -34,6 +34,10 @@ enum Snapshot {
             let suffix = dark ? "-dark" : ""
             model.tab = .favorites; model.newsActive = false
             render(PopoverView(model: model, settings: model.settings), "1-favorites\(suffix)", out, dark, CGSize(width: 360, height: 600))
+            let d = "https://github.com/moritz-poth/Fona/releases/download/v9.9.9/Fona-9.9.9.zip"
+            model.updater.available = UpdateCheck.newestRelease(fromJSON: Data(#"[{"tag_name":"v9.9.9","draft":false,"assets":[{"name":"Fona-9.9.9.zip","browser_download_url":"\#(d)"},{"name":"Fona-9.9.9.zip.sig","browser_download_url":"\#(d).sig"}]}]"#.utf8), includePrereleases: true)
+            render(PopoverView(model: model, settings: model.settings), "6-update\(suffix)", out, dark, CGSize(width: 360, height: 600))
+            model.updater.available = nil
             model.newsActive = true
             render(PopoverView(model: model, settings: model.settings), "2-news\(suffix)", out, dark, CGSize(width: 360, height: 600))
             model.newsActive = false; model.tab = .all

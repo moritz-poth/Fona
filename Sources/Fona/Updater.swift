@@ -44,7 +44,7 @@ final class AppUpdater: ObservableObject {
             if let release, let new = AppVersion(release.tag), let mine = AppVersion(Self.current), mine < new {
                 if available?.tag != release.tag { FileLog.shared.write("update available: \(release.tag)") }
                 available = release
-                if manual { state = .idle }
+                if manual { state = .idle; MenuTarget.shared.showMenuBarWindow() }
             } else {
                 available = nil
                 if manual { state = .upToDate }

@@ -1,5 +1,3 @@
-# Fona – Handbuch
-
 Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die Nachrichten, blendet Fona dorthin über und danach zurück zu deinem Sender – wie früher die Verkehrsfunk-Taste im Autoradio.
 
 ## Erste Schritte

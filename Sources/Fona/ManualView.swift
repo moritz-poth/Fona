@@ -7,6 +7,7 @@ struct ManualView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
+                WindowTitle(text: L.t(.manual))
                 ForEach(Array(lines.enumerated()), id: \.offset) { _, line in row(line) }
             }
             .padding(24)
@@ -20,7 +21,7 @@ struct ManualView: View {
 
     var lines: [String] {
         guard let url = Bundle.main.url(forResource: L.language.rawValue, withExtension: "md", subdirectory: "help"),
-              let data = FileManager.default.contents(atPath: url.path) else { return ["# " + L.t(.manual)] }
+              let data = FileManager.default.contents(atPath: url.path) else { return [] }
         return String(decoding: data, as: UTF8.self).components(separatedBy: "\n").filter { !$0.isEmpty }
     }
 

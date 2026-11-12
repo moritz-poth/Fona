@@ -46,6 +46,7 @@ enum Snapshot {
             render(PopoverView(model: model, settings: model.settings), "4-add\(suffix)", out, dark, CGSize(width: 360, height: 600))
             model.addSheet = false
             render(SettingsView(model: model, settings: model.settings), "5-settings\(suffix)", out, dark, CGSize(width: 560, height: 720))
+            render(ManualView(settings: model.settings), "7-manual\(suffix)", out, dark, CGSize(width: 600, height: 500))
         }
         print("snapshots: \(out.path)")
         NSApp.terminate(nil)

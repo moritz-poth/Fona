@@ -505,7 +505,7 @@ struct UpdateBanner: View {
             }
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.soft))
-            .padding(.horizontal, 12).padding(.vertical, 8)
+            .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 12)  // same gap below as at the sides
         }
     }
 }

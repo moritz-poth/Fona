@@ -25,6 +25,7 @@ struct SettingsView: View {
         ScrollViewReader { proxy in
         ScrollView {
         VStack(alignment: .leading, spacing: 18) {
+                WindowTitle(text: L.t(.settings))
                 section(L.t(.newsSection)) {
                     row(L.t(.newsSwitch)) { FonaSwitch(isOn: $settings.newsEnabled, label: L.t(.newsSwitch)) }
                     divider

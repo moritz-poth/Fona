@@ -1,5 +1,3 @@
-# Fona – Manual
-
 Fona plays internet radio from the menu bar. When the news starts on Deutschlandfunk, Fona fades over to it and back to your station afterwards – like the traffic-announcement button of an old car radio.
 
 ## Getting started

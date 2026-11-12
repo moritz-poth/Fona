@@ -56,6 +56,20 @@ struct FonaSwitch: View {
 }
 
 /// Square with initials – logos are never loaded from the net (security decision).
+/// Window headline: app icon and "Fona – <what>" in a light face of about the icon's height (user 2026-11-12).
+struct WindowTitle: View {
+    let text: String
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 40, height: 40).accessibilityHidden(true)
+            Text(verbatim: "Fona – " + text).font(.system(size: 28, weight: .light))
+        }
+        .padding(.bottom, 10)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+}
+
 struct StationLogo: View {
     let initials: String
     var size: CGFloat = 28

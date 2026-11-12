@@ -73,6 +73,21 @@ final class MenuTarget: NSObject {
         for w in NSApp.windows where w.isVisible && w.styleMask.contains(.titled) { w.performClose(nil) }
     }
 
+    /// Opens the menu bar window as if its icon were clicked (no public API for MenuBarExtra). Used after a manual
+    /// update check finds an update, so the Install button is in sight (user 2026-11-12).
+    func showMenuBarWindow() {
+        // already open? (the MenuBarExtra window is the only panel Fona shows) – a click would close it
+        if NSApp.windows.contains(where: { $0.isVisible && $0 is NSPanel }) { return }
+        func button(in v: NSView?) -> NSStatusBarButton? {
+            guard let v else { return nil }
+            if let b = v as? NSStatusBarButton { return b }
+            return v.subviews.lazy.compactMap { button(in: $0) }.first
+        }
+        for w in NSApp.windows where w.className.contains("StatusBar") {
+            if let b = button(in: w.contentView) { b.performClick(nil); return }
+        }
+    }
+
     @objc func about() {
         AppWindows.aboutRequested = true
         openSettings?()

@@ -5,11 +5,10 @@ import Foundation
 final class NewsSink: PCMSink, @unchecked Sendable {
     static let historySeconds = 15.0
     let ring: PCMRing
-    let detector = ToneDetector()
+    var detector = ToneDetector()
     let lock = NSLock()
     var history: [Float] = []
     var live = false
-    var framesSeen = 0
     var onTone: (@Sendable (_ secondsAgo: Double) -> Void)?
 
     init(ring: PCMRing) { self.ring = ring }
@@ -17,7 +16,7 @@ final class NewsSink: PCMSink, @unchecked Sendable {
     var bufferedSeconds: Double { lock.lock(); defer { lock.unlock() }; return Double(history.count / 2) / DecoderCore.sampleRate }
 
     func reset() {
-        lock.lock(); history.removeAll(); live = false; framesSeen = 0; lock.unlock()
+        lock.lock(); history.removeAll(); live = false; detector = ToneDetector(); lock.unlock()
         ring.clear()
     }
 
@@ -26,20 +25,22 @@ final class NewsSink: PCMSink, @unchecked Sendable {
         history.append(contentsOf: pcm)
         let max = Int(Self.historySeconds * DecoderCore.sampleRate) * 2
         if history.count > max { history.removeFirst(history.count - max) }
-        framesSeen += pcm.count / 2
-        let seen = framesSeen
         let forward = live
+        let det = detector
         lock.unlock()
         if forward { ring.write(pcm) }  // real-time on both sides; a full ring drops (never blocks the network)
-        for d in detector.feed(pcm) {
-            onTone?(Double(seen - d.toneStartFrame) / DecoderCore.sampleRate)
+        // seconds since the first pip, from the detector's own frame counter (2026-11-12 crash: two counters drifted
+        // apart after a restart of the chain and gave a negative replay length)
+        for d in det.feed(pcm) {
+            onTone?(Double(det.framesSeen - d.toneStartFrame) / DecoderCore.sampleRate)
         }
     }
 
     /// Starts forwarding: the last `seconds` of history first, then live.
     func activate(replaySeconds seconds: Double) {
+        let safe = seconds.isFinite ? Swift.min(Swift.max(seconds, 0), Self.historySeconds) : 0
         lock.lock()
-        let n = min(history.count, Int(min(seconds, Self.historySeconds) * DecoderCore.sampleRate) * 2)
+        let n = Swift.max(0, Swift.min(history.count, Int(safe * DecoderCore.sampleRate) * 2))
         let replay = Array(history.suffix(n))
         live = true
         lock.unlock()

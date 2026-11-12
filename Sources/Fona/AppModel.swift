@@ -163,7 +163,11 @@ final class AppModel: ObservableObject {
 
     func show(_ s: StationPlayer.State) {
         state = s
-        news.program(playing: s == .playing, url: current?.url)
+        // the programme counts as on while it connects, buffers or reconnects: switching stations must not restart the
+        // silent news chain (the log showed stop/start on every change)
+        let on: Bool
+        switch s { case .stopped, .failed: on = false; default: on = true }
+        news.program(playing: on, url: current?.url)
         switch s {
         case .playing: player.setPlaying(true)
         case .reconnecting(let n) where n == 1: announce(L.f(.reconnecting, n, StationPlayer.defaultRetryDelays.count))

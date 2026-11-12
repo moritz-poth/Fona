@@ -30,7 +30,8 @@ public final class ToneDetector: @unchecked Sendable {
     let window: Int, hop: Int
     let coeffs: [Double]
     var mono: [Double] = []
-    var framesSeen = 0         // frames consumed into `mono` so far
+    /// Frames fed since creation – the same counter as `Detection.toneStartFrame`.
+    public private(set) var framesSeen = 0
     var toneRun = 0            // consecutive tone hops
     var toneStart = 0
     var pips: [(start: Int, seconds: Double)] = []  // recent short pips

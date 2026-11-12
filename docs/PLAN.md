@@ -438,3 +438,8 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Fehler gefunden und behoben: Abschnitt „Über Fona“ lag seit P7 außerhalb der Fensterstruktur. Einstellungen scrollen jetzt (560 × 720).
 - Veröffentlichung jetzt immer mit DMG (wie Mountpoint: App neben Programme-Verknüpfung, Titel „FONA“), ZIP + Signatur bleiben für den Updater. README-Kopf wie Mountpoint.
 - Veröffentlicht 2026-11-12: Prerelease **v0.1.0-beta.2** (DMG + ZIP + Signatur). Live geprüft: API liefert beta.2, ZIP-Signatur gültig. **Update in der App beta.1 → beta.2 vom Nutzer bestätigt (2026-11-12)** – P7 damit Ende-zu-Ende geprüft.
+
+### Absturz 2026-11-12 11:30 (Nutzer, beta 2) · behoben
+- Absturzbericht: „Can't take a suffix of negative length“ in `NewsSink.activate`; Protokoll: `fadeToNews(replaySeconds: -133.6)`.
+- Ursache: Beim Neustart der stummen DLF-Kette (jeder Senderwechsel) wurde der Sample-Zähler des Puffers auf 0 gesetzt, der des Tonerkenners nicht → „Sekunden seit dem ersten Piep“ negativ.
+- Behoben: ein Zähler (der des Erkenners), Erkenner wird mit dem Puffer neu angelegt; Wiedergabelänge auf 0–15 s begrenzt (NaN/∞ → 0); die Kette läuft beim Senderwechsel weiter (Programm gilt beim Verbinden/Puffern/Wiederverbinden als an). Regressionstests `replayLengthStaysValidAfterRestarts`, `activateNeverCrashesOnBadLengths`.

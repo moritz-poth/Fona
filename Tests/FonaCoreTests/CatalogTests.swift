@@ -17,7 +17,7 @@ func catalogue(_ id: String) {
     let forbidden = ["URLSession", "NWConnection", "CFStream", "getaddrinfo", "Data(contentsOf:", "String(contentsOf:",
                      "NSImage(contentsOf:", "AsyncImage", "AVPlayer", "AVURLAsset", "WKWebView", "inputNode"]
     let files = FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil)!.compactMap { $0 as? URL }
-        .filter { $0.pathExtension == "swift" }
+        .filter { $0.pathExtension == "swift" && !$0.path.contains("/Sources/fona-") }  // developer tools are not shipped
     #expect(!files.isEmpty)
     for f in files {
         let text = try String(contentsOf: f, encoding: .utf8)

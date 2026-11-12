@@ -24,7 +24,7 @@ struct TableResolver: Resolver {
 }
 
 public enum CheckCatalog {
-    public static var all: [Check] { attacks + parsing }
+    public static var all: [Check] { attacks + parsing + content }
 
     public static func runAll() -> [CheckResult] { all.map { $0.execute() } }
 
@@ -256,6 +256,85 @@ public enum CheckCatalog {
             },
             Check(id: "sniff-pls", area: "parse") {
                 Sniffer.sniff(Data("[playlist]\nFile1=http://a.example.com/s\n".utf8)) == .success(.plsPlaylist) ? nil : "not pls"
+            },
+        ]
+    }
+
+    // MARK: foreign text, playlists, frames (PLAN S1, S4, S5)
+
+    static func sanitized(_ id: String, _ input: String, _ expected: String) -> Check {
+        Check(id: id, area: "text") {
+            let out = Sanitize.display(input)
+            return out == expected ? nil : "got \(out.debugDescription)"
+        }
+    }
+
+    static var content: [Check] {
+        [
+            sanitized("text-bidi-override", "Song\u{202E}3pm.exe", "Song3pm.exe"),
+            sanitized("text-bidi-isolates", "a\u{2066}b\u{2069}c\u{200F}", "abc"),
+            sanitized("text-zero-width", "Ra\u{200B}dio\u{FEFF}\u{2060}", "Radio"),
+            sanitized("text-tag-chars", "Hi\u{E0041}\u{E007F}", "Hi"),
+            sanitized("text-line-separators", "one\u{2028}two\u{2029}three\nfour\tfive", "one two three four five"),
+            sanitized("text-control", "a\u{0}b\u{7}c\u{1B}[31m", "abc[31m"),
+            sanitized("text-private-use", "x\u{E000}y", "xy"),
+            sanitized("text-markdown-stays-text", "[click](https://evil.example)", "[click](https://evil.example)"),
+            sanitized("text-nfc", "Cafe\u{301}", "Café"),
+            sanitized("text-spaces", "  Nils   Frahm  –  Says  ", "Nils Frahm – Says"),
+            sanitized("text-umlauts-kept", "Bühne – Café · 1LIVE", "Bühne – Café · 1LIVE"),
+            Check(id: "text-zalgo", area: "text") {
+                let out = Sanitize.display("Z" + String(repeating: "\u{0336}", count: 500) + "a")
+                return out.unicodeScalars.count <= 4 ? nil : "\(out.unicodeScalars.count) scalars"
+            },
+            Check(id: "text-length", area: "text") {
+                let out = Sanitize.display(String(repeating: "ä", count: 5000))
+                return out.count <= 200 && out.utf8.count <= 800 ? nil : "\(out.count) graphemes"
+            },
+            Check(id: "playlist-pls", area: "playlist") {
+                let e = PlaylistParser.entries(Data("[playlist]\nNumberOfEntries=2\nFile1=https://a.example.com/s\nTitle1=x\nFile2=http://b.example.com/t\n".utf8))
+                return e == ["https://a.example.com/s", "http://b.example.com/t"] ? nil : "\(e)"
+            },
+            Check(id: "playlist-m3u", area: "playlist") {
+                let e = PlaylistParser.entries(Data("#EXTM3U\n#EXTINF:-1,Radio\nhttp://a.example.com/s.mp3\n".utf8))
+                return e == ["http://a.example.com/s.mp3"] ? nil : "\(e)"
+            },
+            Check(id: "playlist-no-file-scheme", area: "attack") {
+                let e = PlaylistParser.entries(Data("[playlist]\nFile1=file:///etc/passwd\nFile2=javascript:x\nFile3=//evil\n".utf8))
+                return e.isEmpty ? nil : "\(e)"
+            },
+            Check(id: "playlist-cap", area: "attack") {
+                let text = (1...500).map { "File\($0)=http://h\($0).example.com/" }.joined(separator: "\n")
+                let e = PlaylistParser.entries(Data(text.utf8))
+                return e.count == PlaylistParser.maxEntries ? nil : "\(e.count) entries"
+            },
+            Check(id: "frames-pass-mp3", area: "frames") {
+                var g = FrameGuard(format: .mp3)
+                let out = (try? g.feed(TestMedia.mp3Frames(6))) ?? Data()
+                return out.count == 5 * 417 ? nil : "\(out.count) bytes"  // last frame waits for the next header
+            },
+            Check(id: "frames-skip-garbage", area: "frames") {
+                var g = FrameGuard(format: .adts)
+                let input = Data([0xFF, 0xF1, 0x00, 0x13, 0x37]) + TestMedia.adtsFrames(4)
+                let out = (try? g.feed(input)) ?? Data()
+                return out.count == 3 * 200 && g.droppedBytes == 5 ? nil : "\(out.count) bytes, dropped \(g.droppedBytes)"
+            },
+            Check(id: "frames-skip-id3", area: "frames") {
+                var g = FrameGuard(format: .mp3)
+                let out = (try? g.feed(TestMedia.mp3Frames(2) + TestMedia.id3(300) + TestMedia.mp3Frames(3))) ?? Data()
+                return out.count == 4 * 417 ? nil : "\(out.count) bytes"
+            },
+            Check(id: "frames-refuse-noise", area: "attack") {
+                var g = FrameGuard(format: .mp3)
+                do { _ = try g.feed(randomBytes(200_000, seed: 9)); return "accepted noise" } catch { return nil }
+            },
+            Check(id: "frames-refuse-huge-id3", area: "attack") {
+                var g = FrameGuard(format: .mp3)
+                do { _ = try g.feed(Data([0x49, 0x44, 0x33, 4, 0, 0, 0x7F, 0x7F, 0x7F, 0x7F]) + Data(count: 100)); return "accepted" } catch { return nil }
+            },
+            Check(id: "frames-wrong-format", area: "frames") {
+                var g = FrameGuard(format: .adts)
+                let out = (try? g.feed(TestMedia.mp3Frames(5))) ?? Data()
+                return out.isEmpty ? nil : "mp3 accepted as adts"
             },
         ]
     }

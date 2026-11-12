@@ -93,3 +93,30 @@ struct Rng {
         }
     }
 }
+
+@Test func fuzzFrameGuard() {
+    var r = Rng(x: 6)
+    let seeds = [TestMedia.mp3Frames(8), TestMedia.adtsFrames(10), TestMedia.id3(50) + TestMedia.mp3Frames(4)].map { [UInt8]($0) }
+    for i in 0..<fuzzRounds / 10 {
+        var g = FrameGuard(format: i % 2 == 0 ? .mp3 : .adts)
+        let input = i % 3 == 0 ? r.bytes(r.int(6000)) : r.mutate(seeds[i % seeds.count])
+        var off = 0
+        while off < input.count {
+            let n = 1 + r.int(700)
+            guard (try? g.feed(Data(input[off..<min(input.count, off + n)]))) != nil else { break }
+            off += n
+        }
+    }
+}
+
+@Test func fuzzSanitizeAndPlaylists() {
+    var r = Rng(x: 7)
+    for _ in 0..<fuzzRounds / 4 {
+        let bytes = r.bytes(r.int(600))
+        let text = String(decoding: bytes, as: UTF8.self)
+        let out = Sanitize.display(text)
+        #expect(out.count <= Sanitize.maxGraphemes && out.utf8.count <= Sanitize.maxBytes)
+        #expect(!out.unicodeScalars.contains { $0.properties.generalCategory == .format || $0.properties.generalCategory == .control })
+        _ = PlaylistParser.entries(Data(bytes))
+    }
+}

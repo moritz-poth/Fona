@@ -371,3 +371,10 @@ Auf diesem Mac sind nur die Command Line Tools installiert, **kein Xcode**. Icon
 - Fuzzing (1 Mio. Eingaben je Parser) fand **einen echten Absturz**: Chunk-Größe „-5“ wurde von `Int(_:radix:)` angenommen → behoben, Fall im Katalog; dieselbe Schwäche bei `Content-Length`/`icy-metaint` vorsorglich behoben.
 - Live geprüft (`fona-probe`, `FONA_LIVE=1`): Deutschlandfunk, FFH, Sunshine Live, zwei Shoutcast-v1-Server, 1LIVE-HLS-Master, radio-browser, GitHub-API; abgewiesen: falsches Zertifikat, gzip, Webseite, localhost, `127.1`, `file:`, 6 Weiterleitungen.
 - Noch nicht drin (folgt mit P2): `Sanitize.display`, Mindestdurchsatz live erprobt, `Limits.reportHost` wird in P6 auf den Fona-Eintrag des Workers gesetzt.
+
+### P2 ICY-Wiedergabe – 2026-11-12 · in Arbeit
+- Neu in `FonaCore`: `Sanitize.display` (S4), `PlaylistParser` (S1), `StreamSource` (Playlist → Format per Bytes → ICY-Zerleger → `FrameGuard` → Titel bereinigt), `FrameGuard` (S5, Frame erst frei, wenn der nächste Kopf gültig ist), `DecoderCore` (AudioFileStream + AVAudioConverter, HE-AAC über FormatList, Mono → beide Kanäle), `Player` (ein `AVAudioSourceNode`, zwei Ringpuffer, 80-ms-Gleichleistungsblende).
+- `FonaDecoder.xpc` (Sandbox ohne Rechte, prüft Frames ein zweites Mal) + `DecoderClient` (startet den Dienst nach Absturz neu, ein Wiederholversuch); erste App-Hülle `Fona.app` (`scripts/build-app.sh`, Sandbox, ad-hoc, von innen nach außen signiert). Die echte Oberfläche folgt in P4.
+- Geprüft: Dekodierung gegen ffmpeg – AAC bitgenau, MP3 größte Abweichung 0,00002 (≈ −94 dB). Sandbox-App spielt Deutschlandfunk über NetGate + XPC-Decoder; 3 gewaltsame Abstürze des Decoders hintereinander → Wiedergabe läuft weiter.
+- Fund: Der erste Ringpuffer kopierte Sample für Sample unter Sperre → die Tonausgabe fand die Sperre ~2×/s belegt (Aussetzer). Jetzt `memcpy` in 4096er-Stücken → 0 Aussetzer.
+- Offen: 30-min-Dauertest der 5 Sender (läuft), Mindestdurchsatz live, Wiederverbinden nach Netzabbruch (§5).

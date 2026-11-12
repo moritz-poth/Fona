@@ -13,9 +13,8 @@ let appURL = Bundle.main.bundleURL.deletingLastPathComponent().deletingLastPathC
 let pending = fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Containers/\(bundleID)/Data/Library/Updates")
 
 func fail(_ why: String) -> Never {
+    // unified log only: the sandboxed app owns its container and could plant symlinks there (security scan F2)
     log.error("update refused: \(why, privacy: .public)")
-    FileLog(directory: fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Containers/\(bundleID)/Data/Library/Logs/Fona"))
-        .write("update refused: \(why)")
     NSWorkspace.shared.openApplication(at: appURL, configuration: NSWorkspace.OpenConfiguration()) { _, _ in exit(1) }
     RunLoop.main.run(until: Date().addingTimeInterval(5))
     exit(1)

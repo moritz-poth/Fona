@@ -16,6 +16,11 @@ public struct IPAddress: Hashable, Sendable, CustomStringConvertible {
         }
     }
 
+    public init?(bytes: [UInt8]) {
+        guard bytes.count == 4 || bytes.count == 16 else { return nil }
+        self.bytes = bytes
+    }
+
     public var description: String {
         var buf = [CChar](repeating: 0, count: Int(INET6_ADDRSTRLEN))
         bytes.withUnsafeBytes { p in _ = inet_ntop(isV4 ? AF_INET : AF_INET6, p.baseAddress, &buf, socklen_t(buf.count)) }
@@ -53,17 +58,50 @@ public enum AddressPolicy {
         return true
     }
 
-    public static func isPublic(_ a: IPAddress) -> Bool {
+    public typealias Net = (prefix: [UInt8], bits: Int)
+
+    /// Public = not in a special block AND not the Mac itself or a neighbour on one of its links (security scan F1:
+    /// global IPv6 makes the own address and the /64 look public). `local` is injectable for the check catalogue.
+    public static func isPublic(_ a: IPAddress, local: [Net] = localNets()) -> Bool {
+        if local.contains(where: { $0.prefix.count == a.bytes.count && matches(a.bytes, $0.prefix, $0.bits) }) { return false }
         if a.isV4 { return !blockedV4.contains { matches(a.bytes, $0.prefix, $0.bits) } }
         guard a.bytes[0] & 0xE0 == 0x20 else { return false }
         return !blockedV6InGlobal.contains { matches(a.bytes, $0.prefix, $0.bits) }
     }
 
     /// N4: every resolved address must be public; the first one is used for the connection.
-    public static func choose(_ addresses: [IPAddress]) -> Result<IPAddress, Rejection> {
+    public static func choose(_ addresses: [IPAddress], local: [Net] = localNets()) -> Result<IPAddress, Rejection> {
         guard !addresses.isEmpty else { return .failure(.noAddress) }
-        guard addresses.allSatisfy(isPublic) else { return .failure(.privateAddress) }
+        guard addresses.allSatisfy({ isPublic($0, local: local) }) else { return .failure(.privateAddress) }
         return .success(addresses.first(where: \.isV4) ?? addresses[0])
+    }
+
+    /// The Mac's interface addresses with their on-link prefix lengths, read fresh each time (networks change).
+    public static func localNets() -> [Net] {
+        var head: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&head) == 0 else { return [] }
+        defer { freeifaddrs(head) }
+        var out: [Net] = [], p = head
+        while let i = p {
+            p = i.pointee.ifa_next
+            guard let sa = i.pointee.ifa_addr else { continue }
+            let family = Int32(sa.pointee.sa_family)
+            let addr = raw(sa, family)
+            guard !addr.isEmpty else { continue }
+            // BSD netmasks may carry no family and a short sa_len, so they are read with the address's family
+            let bits = i.pointee.ifa_netmask.map { raw($0, family).reduce(0) { $0 + $1.nonzeroBitCount } } ?? 0
+            // shortcut: a netmask shorter than /16 (odd VPN setups) only blocks the address itself, so it cannot block the internet
+            out.append((addr, bits < 16 ? addr.count * 8 : bits))
+        }
+        return out
+    }
+
+    static func raw(_ sa: UnsafeMutablePointer<sockaddr>, _ family: Int32) -> [UInt8] {
+        let (offset, count) = family == AF_INET ? (4, 4) : family == AF_INET6 ? (8, 16) : (0, 0)
+        let len = Int(sa.pointee.sa_len)
+        return UnsafeRawPointer(sa).withMemoryRebound(to: UInt8.self, capacity: offset + count) { b in
+            (0..<count).map { offset + $0 < len ? b[offset + $0] : 0 }
+        }
     }
 }
 

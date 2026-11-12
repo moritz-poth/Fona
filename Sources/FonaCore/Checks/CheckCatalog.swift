@@ -47,6 +47,15 @@ public enum CheckCatalog {
         }
     }
 
+    /// Fake interfaces: own 2a02:810:1:2::abcd/64 and a host route 93.184.216.34/32.
+    static func localNet(_ id: String, _ ip: String, refused: Bool) -> Check {
+        Check(id: id, area: "attack") {
+            let nets: [AddressPolicy.Net] = [(IPAddress("2a02:810:1:2::abcd")!.bytes, 64), (IPAddress("93.184.216.34")!.bytes, 32)]
+            let isRefused = (try? AddressPolicy.choose([IPAddress(ip)!], local: nets).get()) == nil
+            return isRefused == refused ? nil : (refused ? "would connect to \(ip)" : "refused public \(ip)")
+        }
+    }
+
     static func refuseRedirect(_ id: String, from: String, to: String, _ cls: RequestClass, chain: Int = 1) -> Check {
         Check(id: id, area: "attack") {
             guard case .success(let start) = URLPolicy.check(from, cls) else { return "start URL refused" }
@@ -124,6 +133,14 @@ public enum CheckCatalog {
             refuseAddresses("dns-v6-ula", "radio.example.com", ["fd12:3456::1"]),
             refuseAddresses("dns-mapped", "radio.example.com", ["::ffff:127.0.0.1"]),
             refuseAddresses("dns-empty", "radio.example.com", []),
+            localNet("local-own-v6", "2a02:810:1:2::abcd", refused: true),
+            localNet("local-onlink-router-v6", "2a02:810:1:2::1", refused: true),
+            localNet("local-own-public-v4", "93.184.216.34", refused: true),
+            localNet("local-other-v6-allowed", "2a02:810:1:3::1", refused: false),
+            Check(id: "local-real-interfaces", area: "attack") {
+                let own = AddressPolicy.localNets().compactMap { IPAddress(bytes: $0.prefix) }
+                return own.first(where: { AddressPolicy.isPublic($0) }).map { "own address \($0) counts as public" }
+            },
             refuseRedirect("redirect-to-file", from: "https://radio.example.com/", to: "file:///etc/passwd", .stream),
             refuseRedirect("redirect-to-lan", from: "https://radio.example.com/", to: "http://192.168.1.1/", .stream),
             refuseRedirect("redirect-to-localhost", from: "https://radio.example.com/", to: "http://localhost:8080/", .stream),

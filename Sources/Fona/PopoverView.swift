@@ -13,8 +13,8 @@ struct PopoverView: View {
                 NewsRow(model: model, settings: settings)
                 SegmentPicker(tab: $model.tab)
                 if let n = model.notice { NoticeCard(text: n) { model.notice = nil } }
-                UpdateBanner(updater: model.updater)
                 if model.tab == .favorites { FavoritesList(model: model) } else { AllStations(model: model, settings: settings) }
+                UpdateBanner(updater: model.updater)  // at the lower edge (user request 2026-11-12)
             }
             if model.addSheet { AddStationSheet(model: model).transition(.move(edge: .top)) }
             if let r = model.renaming { RenameSheet(model: model, station: r) }
@@ -492,7 +492,7 @@ struct UpdateBanner: View {
             }
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.soft))
-            .padding(.horizontal, 12).padding(.bottom, 6)
+            .padding(.horizontal, 12).padding(.vertical, 8)
         }
     }
 }

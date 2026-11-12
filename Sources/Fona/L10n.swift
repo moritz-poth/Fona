@@ -12,6 +12,7 @@ enum L {
         case support, selfTest, selfTestHint, runSelfTest, report, reportButton, showLog, likeFona, likeFonaHint, coffee
         case play, pause, settingsButton, favoriteAdd, favoriteRemove, rename, remove, quit, connecting, buffering, reconnecting
         case libraryReset, selfTestPassed, selfTestFailed, stationCount, sortedByPopularity, done
+        case selfTestRunning, reportSent, reportSaved, reportFailed, reportTitle, reportDescription, reportContact, reportAttach, send
     }
 
     static var language: Messages.Language = .en
@@ -94,6 +95,15 @@ enum L {
         case .stationCount: return ("%d Sender", "%d stations")
         case .sortedByPopularity: return ("sortiert nach Beliebtheit", "sorted by popularity")
         case .done: return ("Fertig", "Done")
+        case .selfTestRunning: return ("Selbsttest läuft …", "Self-test running …")
+        case .reportSent: return ("Bericht gesendet. Danke!", "Report sent. Thank you!")
+        case .reportSaved: return ("Senden fehlgeschlagen – der Bericht liegt im Ordner „Reports“ von Fona.", "Sending failed – the report was saved in Fona’s “Reports” folder.")
+        case .reportFailed: return ("Der Bericht konnte weder gesendet noch gespeichert werden.", "The report could neither be sent nor saved.")
+        case .reportTitle: return ("Problem melden", "Report a Problem")
+        case .reportDescription: return ("Was ist passiert?", "What happened?")
+        case .reportContact: return ("E-Mail für Rückfragen (freiwillig)", "E-mail for questions (optional)")
+        case .reportAttach: return ("Systeminfo und Protokoll anhängen (ohne Sendernamen und Links)", "Attach system info and log (without station names and links)")
+        case .send: return ("Senden", "Send")
         }
     }
 

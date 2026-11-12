@@ -27,14 +27,28 @@ public final class NetGate: @unchecked Sendable {
     }
 
     public func open(_ text: String, _ cls: RequestClass) async throws -> Response {
+        try await open(text, cls, body: nil)
+    }
+
+    /// POST with a JSON body – only for the `report` class (bounded, https, fixed host).
+    public func post(_ text: String, json: Data, _ cls: RequestClass) async throws -> (Response, Data) {
+        precondition(cls == .report, "POST is only used for reports")
+        guard json.count <= Limits.reportBytes else { throw Rejection.bodyTooLarge }
+        let r = try await open(text, cls, body: json)
+        var data = Data()
+        for try await piece in r.body { data.append(piece) }
+        return (r, data)
+    }
+
+    func open(_ text: String, _ cls: RequestClass, body: Data?) async throws -> Response {
         var url = try URLPolicy.check(text, cls).get()
         var visited = [url.text]
         while true {
             let conn = try await connect(url)
             do {
-                try await conn.send(request(url, cls))
+                try await conn.send(request(url, cls, body: body))
                 let (head, rest) = try await readHead(conn)
-                if head.isRedirect, let loc = head.location {
+                if head.isRedirect, let loc = head.location, body == nil {  // never re-post a report elsewhere
                     conn.cancel()
                     url = try URLPolicy.redirect(from: url, location: loc, cls, visited: visited).get()
                     visited.append(url.text)
@@ -58,11 +72,12 @@ public final class NetGate: @unchecked Sendable {
         return (r, data)
     }
 
-    func request(_ url: CheckedURL, _ cls: RequestClass) -> Data {
-        var r = "GET \(url.pathAndQuery) HTTP/1.1\r\nHost: \(url.hostHeader)\r\nUser-Agent: \(userAgent)\r\n"
+    func request(_ url: CheckedURL, _ cls: RequestClass, body: Data? = nil) -> Data {
+        var r = "\(body == nil ? "GET" : "POST") \(url.pathAndQuery) HTTP/1.1\r\nHost: \(url.hostHeader)\r\nUser-Agent: \(userAgent)\r\n"
         r += "Accept: */*\r\nAccept-Encoding: identity\r\nConnection: close\r\n"
         if cls == .stream { r += "Icy-MetaData: 1\r\n" }
-        return Data((r + "\r\n").utf8)
+        if let body { r += "Content-Type: application/json\r\nContent-Length: \(body.count)\r\n" }
+        return Data((r + "\r\n").utf8) + (body ?? Data())
     }
 
     // MARK: connection

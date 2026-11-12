@@ -47,11 +47,14 @@ struct SettingsView: View {
                 }
                 section(L.t(.support)) {
                     row(L.t(.selfTest), hint: L.t(.selfTestHint)) {
-                        Button(L.t(.runSelfTest)) { model.runSelfTest() }.buttonStyle(FieldButtonStyle())
+                        Button(L.t(.runSelfTest)) { model.runSelfTest() }.buttonStyle(FieldButtonStyle()).disabled(model.selfTestRunning)
                     }
                     divider
                     row(L.t(.report)) {
-                        HStack { Button(L.t(.showLog)) { showLog() }.buttonStyle(FieldButtonStyle()) }
+                        HStack {
+                            Button(L.t(.reportButton)) { model.problemSheet = true }.buttonStyle(FieldButtonStyle())
+                            Button(L.t(.showLog)) { showLog() }.buttonStyle(FieldButtonStyle())
+                        }
                     }
                     divider
                     row(L.t(.likeFona), hint: L.t(.likeFonaHint)) {
@@ -67,6 +70,7 @@ struct SettingsView: View {
         .foregroundStyle(Theme.text)
         .font(.system(size: 13))
         .overlay(alignment: .top) { if let t = model.toast { ToastView(text: t).padding(.top, 8) } }
+        .sheet(isPresented: $model.problemSheet) { ProblemSheet(model: model) }
     }
 
     var divider: some View { Theme.border.opacity(0.5).frame(height: 1) }
@@ -111,9 +115,8 @@ struct SettingsView: View {
     }
 
     func showLog() {
-        let dir = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)[0].appendingPathComponent("Logs/Fona")
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        NSWorkspace.shared.activateFileViewerSelecting([dir])
+        FileLog.shared.write("show log")
+        NSWorkspace.shared.activateFileViewerSelecting([FileLog.shared.file])
     }
 }
 
@@ -134,5 +137,34 @@ struct FlowChips: View {
             CountryMenu(settings: settings, compact: true) {}
                 .accessibilityLabel(L.t(.addCountry))
         }
+    }
+}
+
+struct ProblemSheet: View {
+    @ObservedObject var model: AppModel
+    @State var text = ""
+    @State var contact = ""
+    @State var attach = true
+    @Environment(\.dismiss) var dismiss
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L.t(.reportTitle)).font(.system(size: 15, weight: .semibold)).accessibilityAddTraits(.isHeader)
+            Text(L.t(.reportDescription)).font(.system(size: 12, weight: .semibold))
+            TextEditor(text: $text).font(.system(size: 13)).frame(height: 120)
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.field))
+            Text(L.t(.reportContact)).font(.system(size: 12, weight: .semibold))
+            TextField("", text: $contact).textFieldStyle(.roundedBorder)
+            Toggle(L.t(.reportAttach), isOn: $attach).toggleStyle(.checkbox)
+            HStack {
+                Spacer()
+                Button(L.t(.cancel)) { dismiss() }.buttonStyle(FieldButtonStyle()).keyboardShortcut(.cancelAction)
+                Button(L.t(.send)) { model.sendProblem(text: text, contact: contact, attach: attach); dismiss() }
+                    .buttonStyle(FieldButtonStyle(filled: true)).keyboardShortcut(.defaultAction)
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(20)
+        .frame(width: 440)
+        .background(Theme.bg)
     }
 }

@@ -95,7 +95,8 @@ final class AppModel: ObservableObject {
         station.onState = { [weak self] s in Task { @MainActor in self?.show(s) } }
         station.onTitle = { [weak self] t in Task { @MainActor in self?.title = t } }
         news.onActive = { [weak self] on in self?.newsActive = on }
-        news.log = { log.notice("\($0, privacy: .public)") }
+        news.log = { log.notice("\($0, privacy: .public)"); FileLog.shared.write($0) }
+        FileLog.shared.write("start Fona \(version) (\(build))")
         applyNewsSettings()
         news.setEnabled(settings.newsEnabled)
         settingsObserver = settings.objectWillChange.sink { [weak self] _ in
@@ -126,6 +127,7 @@ final class AppModel: ObservableObject {
         player.setPlaying(false)
         station.play(s.url)
         log.notice("play \(s.source == .custom ? "custom" : "directory", privacy: .public) station")
+        FileLog.shared.write("play \(s.source == .custom ? "own link" : "directory station")")
     }
 
     func togglePlay() {
@@ -146,6 +148,7 @@ final class AppModel: ObservableObject {
         switch s {
         case .playing: player.setPlaying(true)
         case .failed(let r): player.setPlaying(false); log.error("stream failed: \(r.code, privacy: .public)")
+            FileLog.shared.write("stream failed: \(r.code)")
         default: break
         }
     }
@@ -245,11 +248,78 @@ final class AppModel: ObservableObject {
 
     // MARK: support
 
+    @Published var selfTestRunning = false
+    @Published var problemSheet = false
+
+    var version: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0" }
+    var build: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0" }
+
+    /// Self-test (PLAN §9): the check catalogue (no network) plus live checks of radio-browser and Deutschlandfunk
+    /// (skipped when offline), then an anonymous report.
     func runSelfTest() {
-        let results = CheckCatalog.runAll()
-        let failed = results.filter { !$0.passed }
-        for f in failed { log.error("self-test failed: \(f.id, privacy: .public)") }
-        showToast(failed.isEmpty ? L.f(.selfTestPassed, results.count) : L.f(.selfTestFailed, failed.count, results.count))
+        guard !selfTestRunning else { return }
+        selfTestRunning = true
+        showToast(L.t(.selfTestRunning))
+        Task {
+            let t0 = Date()
+            let checks = await Task.detached { CheckCatalog.runAll() }.value
+            var results = Report.results(from: checks, seconds: Date().timeIntervalSince(t0))
+            results += await networkChecks()
+            let failed = checks.filter { !$0.passed }.count + results.filter { $0.id.hasPrefix("live-") && $0.status == "fail" }.count
+            for f in checks where !f.passed { FileLog.shared.write("self-test failed: \(f.id)") }
+            FileLog.shared.write("self-test: \(failed) failed of \(checks.count + 2)")
+            let report = Report(kind: "selftest", app: version, build: build, date: ISO8601DateFormatter().string(from: Date()),
+                                system: Report.systemInfo(language: L.language.rawValue), results: results,
+                                durationSeconds: (Date().timeIntervalSince(t0) * 10).rounded() / 10,
+                                log: Report.anonymize(FileLog.shared.tail()), note: nil, contact: nil)
+            let outcome = await Reporter.send(report)
+            selfTestRunning = false
+            let summary = failed == 0 ? L.f(.selfTestPassed, checks.count + 2) : L.f(.selfTestFailed, failed, checks.count + 2)
+            showToast(summary + " " + outcomeText(outcome))
+        }
+    }
+
+    func networkChecks() async -> [Report.Result] {
+        func result(_ id: String, _ t0: Date, _ status: String, _ detail: String) -> Report.Result {
+            Report.Result(id: id, title: id, status: status, detail: detail, seconds: (Date().timeIntervalSince(t0) * 10).rounded() / 10)
+        }
+        var out: [Report.Result] = []
+        var t0 = Date()
+        do {
+            let r = try await directory.search("radio", countries: ["DE"])
+            out.append(result("live-directory", t0, r.isEmpty ? "fail" : "pass", "\(r.count) results"))
+        } catch {
+            out.append(result("live-directory", t0, "skip", "offline or directory unreachable: \((error as? Rejection)?.code ?? "network")"))
+        }
+        t0 = Date()
+        do {
+            var frames = 0, titles = 0
+            for try await e in try await StreamSource.open(NewsWatcher.newsURL) {
+                if case .frames = e { frames += 1 }
+                if case .title = e { titles += 1 }
+                if frames >= 20 || Date().timeIntervalSince(t0) > 10 { break }
+            }
+            out.append(result("live-news-station", t0, frames > 0 ? "pass" : "fail", "\(frames) frame blocks, titles \(titles > 0 ? "yes" : "no")"))
+        } catch {
+            out.append(result("live-news-station", t0, "skip", "unreachable: \((error as? Rejection)?.code ?? "network")"))
+        }
+        return out
+    }
+
+    func outcomeText(_ o: Reporter.Outcome) -> String {
+        switch o { case .sent: return L.t(.reportSent); case .saved: return L.t(.reportSaved); case .failed: return L.t(.reportFailed) }
+    }
+
+    func sendProblem(text: String, contact: String, attach: Bool) {
+        let report = Report(kind: "problem", app: version, build: build, date: ISO8601DateFormatter().string(from: Date()),
+                            system: attach ? Report.systemInfo(language: L.language.rawValue) : [:], results: [], durationSeconds: 0,
+                            log: attach ? Report.anonymize(FileLog.shared.tail()) : [], note: String(text.prefix(5000)),
+                            contact: contact.trimmingCharacters(in: .whitespaces).isEmpty ? nil : String(contact.prefix(200)))
+        Task {
+            let o = await Reporter.send(report)
+            if case .saved(let url) = o { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+            showToast(outcomeText(o))
+        }
     }
 
     func showToast(_ text: String) {

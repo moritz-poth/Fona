@@ -443,3 +443,4 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Absturzbericht: „Can't take a suffix of negative length“ in `NewsSink.activate`; Protokoll: `fadeToNews(replaySeconds: -133.6)`.
 - Ursache: Beim Neustart der stummen DLF-Kette (jeder Senderwechsel) wurde der Sample-Zähler des Puffers auf 0 gesetzt, der des Tonerkenners nicht → „Sekunden seit dem ersten Piep“ negativ.
 - Behoben: ein Zähler (der des Erkenners), Erkenner wird mit dem Puffer neu angelegt; Wiedergabelänge auf 0–15 s begrenzt (NaN/∞ → 0); die Kette läuft beim Senderwechsel weiter (Programm gilt beim Verbinden/Puffern/Wiederverbinden als an). Regressionstests `replayLengthStaysValidAfterRestarts`, `activateNeverCrashesOnBadLengths`.
+- Veröffentlicht 2026-11-12: Prerelease **v0.1.0-beta.3** (Absturz-Korrektur, Menüleisten-Symbol Variante 3, Update-Hinweis unten, Lautstärke-Balken). Selbsttest des Release-Builds = Issue #3.

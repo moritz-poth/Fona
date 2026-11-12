@@ -459,3 +459,4 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Lautstärke: auch die dünne Markierung beim Anklicken entfernt (keine Umrandung mehr; Pfeiltasten gehen weiter, VoiceOver ansagbar).
 - Einstellungen/Handbuch über das Zahnrad schließen jetzt sofort das Menüleisten-Fenster (vorher blieb es offen und verschwand erst beim Schließen des anderen Fensters).
 - „Zuletzt gehört“: Grenze 10 bestand schon (Favoriten zählen mit, werden dort aber nicht gezeigt) – Nutzer: so lassen.
+- Veröffentlicht 2026-11-12: Prerelease **v0.1.0-beta.5** (Fenster schließt beim Öffnen von Einstellungen/Handbuch, keine Umrandung am Lautstärke-Balken). API liefert beta.5, Downloads identisch.

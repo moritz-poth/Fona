@@ -462,3 +462,9 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Veröffentlicht 2026-11-12: Prerelease **v0.1.0-beta.5** (Fenster schließt beim Öffnen von Einstellungen/Handbuch, keine Umrandung am Lautstärke-Balken). API liefert beta.5, Downloads identisch.
 - Update-Hinweis: unten 12 pt Abstand wie seitlich. Einstellungen und Handbuch mit Kopfzeile: App-Icon + „Fona – Einstellungen/Handbuch“ (leichte Schrift, 28 pt, `WindowTitle`); erste Zeile der Handbuch-Dateien dafür entfernt. „Jetzt suchen“ mit gefundenem Update öffnet das Menüleisten-Fenster (Klick auf das Statusleisten-Symbol per Code, `MenuTarget.showMenuBarWindow`; noch nicht live geprüft). Snapshot `7-manual` neu.
 - Veröffentlicht 2026-11-12: Prerelease **v0.1.0-beta.6** (Kopfzeilen mit Icon, Update-Abstand, „Jetzt suchen“ öffnet Menüleisten-Fenster). API liefert beta.6, Downloads identisch.
+
+### Sicherheits-Scan 2026-11-12 (Claude Security, ganzes Repo, medium, Revision c28d63e) · offen
+- Bericht lokal: `CLAUDE-SECURITY-20261112-135126/` (git-ignoriert). 2 Funde, beide LOW, je 3/3 bestätigt; 2 weitere Kandidaten 0/3 verworfen.
+- F1 `AddressPolicy.isPublic`: eigene IPv6-Adresse des Macs und Adressen im eigenen /64 gelten als öffentlich (auch Router-WAN-IPv4 per Hairpin-NAT) → blinde GETs an Mac/Router möglich. Korrektur: beim Verbinden `getifaddrs` lesen, eigene Adressen und On-Link-Präfixe in `choose` und Peer-Recheck ablehnen; Fälle in `CheckCatalog`.
+- F2 `FonaUpdater` schreibt sein Log ohne Sandbox in den Container-Ordner und folgt dabei Symlinks (nur relevant nach Übernahme des Sandbox-Prozesses). Korrektur: Helfer loggt über `os.Logger` statt in den Container.
+- Nutzer entscheidet noch: direkt beheben oder erst als Patch-Vorschlag.

@@ -104,6 +104,11 @@ final class AppModel: ObservableObject {
         }
         if CommandLine.arguments.contains("--mute") { player.volume = 0 }
         if settings.resumeOnLaunch, let id = settings.lastStationID, let s = library.station(id) { play(s) }
+        // developer launch argument: --selftest (runs the self-test, sends the report, quits)
+        if CommandLine.arguments.contains("--selftest") {
+            selfTestQuits = true
+            DispatchQueue.main.async { self.runSelfTest() }
+        }
         // developer launch argument: --play-url <url> (checks without clicking)
         let args = CommandLine.arguments
         if let i = args.firstIndex(of: "--play-url"), i + 1 < args.count {
@@ -249,6 +254,7 @@ final class AppModel: ObservableObject {
     // MARK: support
 
     @Published var selfTestRunning = false
+    var selfTestQuits = false
     @Published var problemSheet = false
 
     var version: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0" }
@@ -276,6 +282,8 @@ final class AppModel: ObservableObject {
             selfTestRunning = false
             let summary = failed == 0 ? L.f(.selfTestPassed, checks.count + 2) : L.f(.selfTestFailed, failed, checks.count + 2)
             showToast(summary + " " + outcomeText(outcome))
+            log.notice("self-test done: \(summary, privacy: .public) \(String(describing: outcome), privacy: .public)")
+            if selfTestQuits { NSApp.terminate(nil) }
         }
     }
 

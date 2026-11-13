@@ -32,8 +32,9 @@ func logic(enabled: Bool = true, playing: Bool = true) -> (NewsLogic, Clock) {
 @Test func toneInWindowSwitchesAndTitlelessNewsEndsByDuration() {
     var (l, c) = logic()
     #expect(l.handle(.tone(secondsAgo: 2.5), now: c.at(12, 0, 3)) == [.fadeToNews(replaySeconds: 2.5)])
-    // 12:00 case: the title never says "Nachrichten" → a title change must NOT end the news
+    // 09:00/00:00 case: the title never says "Nachrichten" → the bare station name must NOT end the news
     #expect(l.handle(.title("Deutschlandfunk - Alles von Relevanz"), now: c.at(12, 0, 30)) == [])
+    #expect(l.handle(.title("Deutschlandfunk"), now: c.at(12, 0, 45)) == [])
     #expect(l.handle(.tick, now: c.at(12, 9)) == [])
     #expect(l.handle(.tick, now: c.at(12, 10, 4)) == [.fadeToProgram])  // maxMinutes 10
     #expect(l.handle(.tone(secondsAgo: 1), now: c.at(12, 10, 30)) == [])  // cooldown
@@ -119,4 +120,12 @@ func newsTitleRule(_ t: String, _ expected: Bool) { #expect(NewsLogic.isNewsTitl
     #expect(l.handle(.title("Nachrichten"), now: c.at(12, 0, 20)) == [])   // joined mid-bulletin: stay
     #expect(l.handle(.title("Musik"), now: c.at(12, 5)) == [])
     #expect(l.handle(.title("Nachrichten"), now: c.at(12, 30, 3)) == [.fadeToNews(replaySeconds: 4)])
+}
+
+@Test func titlelessNewsEndsAtFirstProgrammeTitle() {
+    var (l, c) = logic()
+    #expect(l.handle(.tone(secondsAgo: 2), now: c.at(9, 0, 1)) == [.fadeToNews(replaySeconds: 2)])
+    #expect(l.handle(.title("Deutschlandfunk"), now: c.at(9, 0, 25)) == [])
+    #expect(l.handle(.title("Vor 15 Jahren: Silvio Berlusconi tritt zurück"), now: c.at(9, 5, 17)) == [.fadeToProgram])
+    if case .cooldown = l.state {} else { Issue.record("expected cooldown, got \(l.state)") }
 }

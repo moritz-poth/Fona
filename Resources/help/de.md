@@ -27,7 +27,7 @@ Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die 
 - Danach geht es live mit deinem Sender weiter. **Jetzt zurück** beendet die Nachrichten sofort.
 - Hörst du Deutschlandfunk selbst oder hast du angehalten, schaltet Fona nichts um.
 - **Einstellungen → Zeitplan:** Fona lauscht nur rund um die volle Stunde (oder volle und halbe Stunde). Deutschlandfunk sendet nachts stündlich, tagsüber auch zur halben Stunde.
-- **Höchstdauer:** Schickt Deutschlandfunk ausnahmsweise keinen Nachrichten-Titel, kehrt Fona nach dieser Zeit zurück (Nachrichten dauern 5–10 Minuten).
+- **Höchstdauer:** Erkennt Fona das Ende ausnahmsweise nicht am Sendungstitel, kehrt Fona nach dieser Zeit zurück (Nachrichten dauern 5–10 Minuten).
 - Datenverbrauch: Weil Deutschlandfunk mitläuft, braucht Fona etwa doppelt so viel Daten wie ein einzelner Sender – rund 115 MB pro Stunde. Ohne Umschaltung etwa die Hälfte.
 
 ## Einstellungen

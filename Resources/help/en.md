@@ -27,7 +27,7 @@ Fona plays internet radio from the menu bar. When the news starts on Deutschland
 - Afterwards your station continues live. **Back Now** ends the news at once.
 - If you listen to Deutschlandfunk yourself or have paused, Fona switches nothing.
 - **Settings → Schedule:** Fona only listens around the full hour (or full and half hour). Deutschlandfunk has news hourly at night and also at half past during the day.
-- **Maximum length:** if Deutschlandfunk sends no news title for once, Fona returns after this time (bulletins last 5–10 minutes).
+- **Maximum length:** if for once Fona cannot tell the end from the programme title, it returns after this time (bulletins last 5–10 minutes).
 - Data use: because Deutschlandfunk runs alongside, Fona uses about twice the data of one station – roughly 115 MB per hour. Without the news switch about half.
 
 ## Settings

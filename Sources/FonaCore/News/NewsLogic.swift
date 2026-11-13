@@ -54,6 +54,11 @@ public struct NewsLogic: Sendable {
         return rest.first.map { !$0.isLetter && !$0.isNumber } ?? true
     }
 
+    /// "Deutschlandfunk", "Deutschlandfunk - Alles von Relevanz": the filler title DLF shows when a slot has no own title.
+    public static func isStationName(_ t: String) -> Bool {
+        t.trimmingCharacters(in: .whitespaces).lowercased().hasPrefix("deutschlandfunk")
+    }
+
     /// Inside ±window around :00 (and :30 with half hours)?
     public func inScheduleWindow(_ now: Date) -> Bool {
         let c = config.calendar.dateComponents([.minute, .second], from: now)
@@ -91,9 +96,10 @@ public struct NewsLogic: Sendable {
             let matched = Self.isNewsTitle(t)
             lastTitleMatched = matched
             if matched { state = .news(since: since, titleSeen: true); return [] }
-            // the title only ends the news once a news title was seen in this episode (12:00 case: none at all)
+            // without a news title in this episode (09:00/00:00 in P0-b) only the bare station name is "still news";
+            // the first real programme title ends it
             if case .news(_, true) = state { return endNews(now) }
-            return []
+            return Self.isStationName(t) ? [] : endNews(now)
         case (.news(let since, let seen), .tick):
             let limit = seen ? config.hardMaxMinutes : config.maxMinutes
             return now.timeIntervalSince(since) >= limit * 60 ? endNews(now) : []

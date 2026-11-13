@@ -211,7 +211,7 @@ titleRule: ^Nachrichten\b (ohne Groß/Klein) · scheduleWindow: ±90 s um :00 (u
 
 ### 6.3 Erkennung
 - **Start** durch (a) **Ton** innerhalb des Zeitplanfensters, oder (b) **Titel** passend zu `^Nachrichten\b` innerhalb des Zeitplanfensters. Der Zeitplan löst **nie allein** aus (ob doch, entscheidet P0-b).
-- **Ende** durch (a) Titel, der nicht mehr passt – **nur wenn** in dieser Episode ein passender Titel gesehen wurde; (b) sonst `newsMaxMinutes` (Standard 10 min – Ausgaben dauern 5–10 min); (c) „Jetzt zurück“; (d) Höchstdauer 12 min.
+- **Ende** durch (a) Titel, der nicht mehr passt, wenn in dieser Episode ein passender Titel gesehen wurde – sonst erst der erste Titel, der auch nicht reiner Sendername („Deutschlandfunk…“) ist (P0-b: 09:00/00:00); (b) sonst `newsMaxMinutes` (Standard 10 min – Ausgaben dauern 5–10 min); (c) „Jetzt zurück“; (d) Höchstdauer 12 min.
 - **Wiedergabe:** Der Nachrichten-Ringpuffer (15 s PCM) liefert ab dem Tonbeginn bzw. 4 s vor dem Titelwechsel (Wert aus P0-b); 80-ms-Überblendung; zurück wird live aus dem Programm-Ringpuffer übergeblendet.
 
 ### 6.4 Zustandsautomat
@@ -341,7 +341,8 @@ Spike: `spikes/p0a/` (sandboxed App + nicht sandboxed Hilfsprogramm in `Contents
 - Titel erscheint 1–7 s nach der Stunde; Dauer (Titel an → aus): halbe Stunde 4:19–5:10, volle Stunde 4:59–5:05 oder 9:48–10:07 (06, 08, 10, 12, 13, 14, 16, 18, 20, 23 Uhr). Längste Ausgabe ab Zeitzeichen ≈ 10:12.
 - Titelregel `^Nachrichten\b` hält: „Nachrichtendienstreform: …“ (15:36, @mediasres) passt nicht; liegt zudem außerhalb des Zeitfensters.
 - Reconnects des Rekorders nur um xx:20 (Stream bricht alle 6 h ab), keine Lücke an einer Nachrichtenausgabe.
-- **Offen:** Ende ohne Nachrichten-Titel – Vorschlag: Episode endet beim ersten Titel, der weder `^Nachrichten\b` noch reiner Sendername („Deutschlandfunk…“) ist; Höchstdauer bleibt als Rückfall.
+- **Ende ohne Nachrichten-Titel (umgesetzt 2026-11-13):** Episode endet beim ersten Titel, der weder `^Nachrichten\b` noch reiner Sendername („Deutschlandfunk…“) ist; Höchstdauer bleibt als Rückfall. Auf den Werktags-Titeln nachgespielt: endet um 09:00 und 00:00 nach ≈ 5:16 min, bei keiner anderen Ausgabe zu früh.
+- Wochenend-Mitschnitt läuft seit 2026-11-13 16:35 bis 2026-11-16 00:20 → `design/research/weekend/`.
 
 ### P0-c HLS – 2026-11-12 · Ergebnis: **Ja** (Dekodierung); Dauertest → P3
 Spike: `spikes/p0c/main.swift` (eigener TS-Demuxer PAT/PMT/PES → ADTS → `AudioFileStream` + `AVAudioConverter`).

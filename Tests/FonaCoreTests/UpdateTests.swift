@@ -54,3 +54,7 @@ func liveUpdatePath() async throws {
     #expect(UpdateKey.verify(zip, signatureBase64: sig))
     #expect(UpdateCheck.newestRelease(fromJSON: json, includePrereleases: false) == nil || !r.prerelease)
 }
+
+@Test func betaNumbersCompareAsNumbers() {
+    #expect(AppVersion("0.1.0-beta.9")! < AppVersion("v0.1.0-beta.10")!)
+}

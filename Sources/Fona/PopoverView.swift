@@ -35,7 +35,7 @@ struct Header: View {
             StationLogo(initials: model.current?.initials ?? "F", size: 48, active: model.isPlaying)
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: model.current?.displayName ?? "Fona").font(.system(size: 14, weight: .semibold)).lineLimit(1)
-                Text(verbatim: model.statusLine).foregroundStyle(Theme.text2).lineLimit(1).truncationMode(.middle)
+                Marquee(text: model.statusLine).foregroundStyle(Theme.text2).id(model.statusLine)
             }
             .contextMenu {
                 if let s = model.current, model.library.station(s.id) != nil {
@@ -174,6 +174,8 @@ struct StationRow: View {
     @ObservedObject var model: AppModel
     let station: Station
     var trailing: String?
+    @State private var hovering = false
+    @State private var menuOpen = false
     var body: some View {
         let isCurrent = model.current?.url == station.url && model.isPlaying
         Button { model.play(station) } label: {
@@ -189,9 +191,14 @@ struct StationRow: View {
             }
             .padding(.horizontal, 8).frame(height: 40)
             .background(RoundedRectangle(cornerRadius: 7).fill(isCurrent ? Theme.soft : .clear))
+            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Theme.switchOn, lineWidth: 1.5).opacity(menuOpen ? 1 : 0))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        // our own right-click outline (the system List drew a blue one): the row under the pointer when a menu opens
+        .onReceive(NotificationCenter.default.publisher(for: NSMenu.didBeginTrackingNotification)) { _ in if hovering { menuOpen = true } }
+        .onReceive(NotificationCenter.default.publisher(for: NSMenu.didEndTrackingNotification)) { _ in menuOpen = false }
         .accessibilityLabel([station.displayName, isCurrent ? L.t(.playing) : nil, trailing].compactMap { $0 }.joined(separator: ", "))
         .accessibilityActions {
             Button(model.library.isFavorite(station.id) ? L.t(.favoriteRemove) : L.t(.favoriteAdd)) { model.toggleFavorite(station) }
@@ -208,32 +215,36 @@ struct StationRow: View {
 
 struct FavoritesList: View {
     @ObservedObject var model: AppModel
+    @State private var dragging: UUID?
     var body: some View {
-        List {
-            if model.library.favoriteStations.isEmpty {
-                Text(L.t(.noFavorites)).foregroundStyle(Theme.text2).listRowSeparator(.hidden)
-            }
-            ForEach(model.library.favoriteStations) { s in
-                StationRow(model: model, station: s).listRowInsets(EdgeInsets(top: 0, leading: 6, bottom: 0, trailing: 6)).listRowSeparator(.hidden)
-            }
-            .onMove { model.moveFavorites($0, $1) }
-            let recent = model.library.historyStations
-            if !recent.isEmpty {
-                Text(L.t(.recentlyPlayed)).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.text2)
-                    .padding(.top, 8).listRowSeparator(.hidden).accessibilityAddTraits(.isHeader)
-                ForEach(recent) { s in
-                    HStack(spacing: 0) {
-                        StationRow(model: model, station: s, trailing: relative(s))
-                        Button { model.toggleFavorite(s) } label: { Image(systemName: "star").foregroundStyle(Theme.text2) }
-                            .buttonStyle(.plain).frame(width: 24, height: 24)
-                            .accessibilityLabel("\(s.displayName) – \(L.t(.favoriteAdd))")
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                if model.library.favoriteStations.isEmpty {
+                    Text(L.t(.noFavorites)).foregroundStyle(Theme.text2).padding(.horizontal, 14).padding(.vertical, 8)
+                }
+                ForEach(model.library.favoriteStations) { s in
+                    StationRow(model: model, station: s).padding(.horizontal, 6)
+                        .opacity(dragging == s.id ? 0.4 : 1)
+                        .onDrag { dragging = s.id; return NSItemProvider(object: s.id.uuidString as NSString) }
+                        .onDrop(of: [.text], delegate: FavoriteDrop(target: s.id, model: model, dragging: $dragging))
+                }
+                let recent = model.library.historyStations
+                if !recent.isEmpty {
+                    Text(L.t(.recentlyPlayed)).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.text2)
+                        .padding(.top, 16).padding(.bottom, 4).padding(.horizontal, 14).accessibilityAddTraits(.isHeader)
+                    ForEach(recent) { s in
+                        HStack(spacing: 0) {
+                            StationRow(model: model, station: s, trailing: relative(s))
+                            Button { model.toggleFavorite(s) } label: { Image(systemName: "star").foregroundStyle(Theme.text2) }
+                                .buttonStyle(.plain).frame(width: 24, height: 24)
+                                .accessibilityLabel("\(s.displayName) – \(L.t(.favoriteAdd))")
+                        }
+                        .padding(.leading, 6).padding(.trailing, 10)
                     }
-                    .listRowInsets(EdgeInsets(top: 0, leading: 6, bottom: 0, trailing: 10)).listRowSeparator(.hidden)
                 }
             }
+            .padding(.vertical, 6)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
     }
 
     func relative(_ s: Station) -> String {
@@ -244,6 +255,50 @@ struct FavoritesList: View {
         f.dateTimeStyle = .named
         let now = Date()
         return now.timeIntervalSince(d) < 60 ? f.localizedString(fromTimeInterval: 0) : f.localizedString(for: min(d, now), relativeTo: now)
+    }
+}
+
+/// Reorders favourites while dragging over them (replaces List.onMove).
+struct FavoriteDrop: DropDelegate {
+    let target: UUID
+    let model: AppModel
+    @Binding var dragging: UUID?
+    func dropEntered(info: DropInfo) {
+        let ids = model.library.favoriteStations.map(\.id)
+        guard let d = dragging, d != target, let from = ids.firstIndex(of: d), let to = ids.firstIndex(of: target) else { return }
+        withAnimation(.easeOut(duration: 0.15)) { model.moveFavorites(IndexSet(integer: from), to > from ? to + 1 : to) }
+    }
+    func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
+    func performDrop(info: DropInfo) -> Bool { dragging = nil; return true }
+}
+
+/// One line that scrolls back and forth when it does not fit (user 2026-11-13: titles were cut off).
+struct Marquee: View {
+    let text: String
+    @State private var boxWidth: CGFloat = 0
+    @State private var textWidth: CGFloat = 0
+    @State private var scrolled = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        let overflow = textWidth - boxWidth
+        let moving = overflow > 1 && !reduceMotion
+        Text(verbatim: text).lineLimit(1).truncationMode(.middle).opacity(moving ? 0 : 1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { boxWidth = $0 }
+            .background(alignment: .leading) {
+                Text(verbatim: text).fixedSize().hidden()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { textWidth = $0 }
+            }
+            .overlay(alignment: .leading) {
+                if moving {
+                    Text(verbatim: text).fixedSize()
+                        .offset(x: scrolled ? -overflow : 0)
+                        .animation(.linear(duration: Double(overflow) / 30).delay(2).repeatForever(autoreverses: true), value: scrolled)
+                        .onAppear { scrolled = true }
+                }
+            }
+            .clipped()
+            .accessibilityElement(children: .ignore).accessibilityLabel(text)
     }
 }
 

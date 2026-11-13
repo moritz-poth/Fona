@@ -330,7 +330,7 @@ Spike: `spikes/p0a/` (sandboxed App + nicht sandboxed Hilfsprogramm in `Contents
 - Download aus der Sandbox trägt Quarantäne (`quarantine=true`); nach `ditto` + `xattr -dr com.apple.quarantine` startet die neue Version ohne Gatekeeper-Stopp.
 - **Container-Zugriff bleibt erhalten:** v2 (anderer CDHash) liest Daten von v1, v3 liest Daten von v2. Automatischer Durchlauf v2 → v3 in 1,2 s.
 - Lehre: Die App muss sich nach dem Start des Hilfsprogramms **sofort** beenden (nicht auf dessen Rückmeldung warten); das Hilfsprogramm bricht ab, wenn die App nach 10 s noch läuft.
-- Offen: macOS 14 (kein Testgerät hier) – vor dem ersten Release auf einem 14er-Mac wiederholen; erst dann ist das eigene Zertifikat endgültig vom Tisch.
+- macOS 14: nicht getestet – keine Testumgebung, Nutzer hat den Test am 2026-11-13 gestrichen. Restrisiko: Container-Abfrage nach Update auf 14 unbekannt.
 - Rest: ein leerer Container-Ordner `io.github.moritz-poth.fona.spike` bleibt (macOS schützt ihn vor dem Löschen per Terminal; im Finder löschbar).
 
 ### P0-b Nachrichten-Messung – Werktag ausgewertet 2026-11-13 · Ergebnis: **Ja**; Wochenende offen
@@ -399,7 +399,7 @@ Auf diesem Mac sind nur die Command Line Tools installiert, **kein Xcode**. Icon
 - Prüfung per `--snapshot` (zeichnet alle Ansichten hell/dunkel mit Beispieldaten, speichert nichts): stimmt mit `design/canvas` überein. Korrigiert nach Sichtung: Menüs zeigten den macOS-Popup-Stil (Rahmen weg, Pfeil links), Nachrichten-Kopfzeile im Dunkelmodus dunkel auf dunkel, Logos in Großbuchstaben, „in 0 Sek.“ → „jetzt“.
 - **Fehler meinerseits behoben:** Der Entwickler-Start `--play-url` schrieb einen Testsender in die echte Senderliste des Nutzers → entfernt, Teststarts speichern nichts mehr.
 - P2-Dauertest (5 Sender × 30 min): 0 Dekodierfehler, aber 3–7 Sperr-Aussetzer je Sender → Tonausgabe versucht die Sperre jetzt einige µs lang erneut und liest den Nachrichtenpuffer nur, wenn er hörbar ist. Kontrolllauf läuft.
-- Offen in P4: Checklisten VoiceOver/Tastatur, Hover-Zustände, Menüleisten-Symbol aus `design/icon` statt SF Symbol, App-Icon (`.icns`).
+- Offen in P4 (Nutzertest VoiceOver/Kontrast am 2026-11-13 gestrichen; Kontrastwerte sind im Code berechnet, siehe `Theme.swift`): Checkliste Tastatur, Hover-Zustände, Menüleisten-Symbol aus `design/icon` statt SF Symbol, App-Icon (`.icns`).
 - Kontrolllauf 2026-11-12 nach Umbau (sperrfreier Ringpuffer, HLS-Startpuffer = 2 Segmente): 7 Sender × 15 min (radioeins, DLF, SWR3, 1LIVE MP3, FluxFM 44,1 kHz, FIP HLS, 1LIVE HLS) → **0 Aussetzer, 0 Dekodierfehler**. FIP-Puffer zeitweise nur 3 s – beobachten.
 
 ### P5 Nachrichten – 2026-11-12 · Logik fertig, Live-Test bestanden

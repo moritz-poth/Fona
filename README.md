@@ -6,7 +6,7 @@
 
 Internet radio in your Mac's menu bar – with an automatic switch to the Deutschlandfunk news, like the traffic-announcement button of an old car radio.
 
-*Deutsch:* Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die Nachrichten, blendet Fona dorthin über und danach zurück zu deinem Sender. Das Handbuch gibt es in der App auf Deutsch (Zahnrad → Handbuch).
+*Deutsch:* Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die Nachrichten, blendet Fona dorthin über und danach zurück zu deinem Sender. Das Handbuch gibt es in der App auf Deutsch (Buch-Symbol unten im Fenster).
 
 <p align="center">
   <img src="assets/screenshots/favourites.png" width="250" alt="Favourites and Recently Played, with the news switch waiting for the next news">&nbsp;

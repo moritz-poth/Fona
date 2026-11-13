@@ -14,7 +14,8 @@ struct PopoverView: View {
                 SegmentPicker(tab: $model.tab)
                 if let n = model.notice { NoticeCard(text: n) { model.notice = nil } }
                 if model.tab == .favorites { FavoritesList(model: model) } else { AllStations(model: model, settings: settings) }
-                UpdateBanner(updater: model.updater)  // at the lower edge (user request 2026-11-12)
+                UpdateBanner(updater: model.updater)  // sits on the footer line (user request 2026-11-13)
+                FooterBar()
             }
             if model.addSheet { AddStationSheet(model: model).transition(.move(edge: .top)) }
             if let r = model.renaming { RenameSheet(model: model, station: r) }
@@ -45,7 +46,6 @@ struct Header: View {
             Spacer(minLength: 0)
             VerticalVolume(settings: model.settings)
             PlayButton(model: model)
-            GearMenu()
         }
         .padding(16)
         }
@@ -68,7 +68,6 @@ struct NewsHeader: View {
                 }
                 Spacer(minLength: 0)
                 PlayButton(model: model)
-                GearMenu()
             }
             HStack(spacing: 8) {
                 Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .semibold)).accessibilityHidden(true)
@@ -99,25 +98,31 @@ struct PlayButton: View {
     }
 }
 
-struct GearMenu: View {
+/// Settings, manual, quit as icons in a bar at the bottom (user's pick 2026-11-13, canvas variant C without text).
+struct FooterBar: View {
     @Environment(\.openWindow) var openWindow
     var body: some View {
-        Menu {
-            Button(L.t(.settings) + " …") { open("settings") }
-                .keyboardShortcut(",")
-            Button(L.t(.manual)) { open("manual") }
-            Divider()
-            Button(L.t(.quit)) { NSApp.terminate(nil) }
-        } label: {
-            Image(systemName: "gearshape").font(.system(size: 15)).foregroundStyle(Theme.text2)
+        HStack(spacing: 4) {
+            icon("gearshape", L.t(.settingsButton)) { open("settings") }.keyboardShortcut(",")
+            icon("book", L.t(.manual)) { open("manual") }
+            Spacer()
+            icon("power", L.t(.quit)) { NSApp.terminate(nil) }
         }
-        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
-        .accessibilityLabel(L.t(.settingsButton))
-        .help(L.t(.settingsButton))
+        .padding(.horizontal, 10).frame(height: 40)
+        .background(Theme.surface)
+        .overlay(alignment: .top) { Theme.border.frame(height: 1) }
+    }
+
+    func icon(_ symbol: String, _ label: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: 14)).foregroundStyle(Theme.text2)
+                .frame(width: 28, height: 28).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).accessibilityLabel(label).help(label)
     }
 
     /// Opens settings or the manual and closes the menu bar window (user 2026-11-12: it vanished only later, when the
-    /// other window closed). The gear lives only in the menu bar window, so that is the key window here.
+    /// other window closed). The footer lives only in the menu bar window, so that is the key window here.
     func open(_ id: String) {
         let menuBarWindow = NSApp.keyWindow
         openWindow(id: id)

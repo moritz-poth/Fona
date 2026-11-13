@@ -474,6 +474,13 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Veröffentlicht 2026-11-12: Prerelease **v0.1.0-beta.7** (Sicherheitsfunde F1 und F2 behoben, README mit Screenshots).
 - Veröffentlicht 2026-11-12: Prerelease **v0.1.0-beta.8** (Play/Pause-Taste, Kopfhörertaste und Kontrollzentrum über `NowPlaying.swift`; Sender und Titel im Kontrollzentrum).
 
+### Rückmeldung Nutzer 2026-11-13 (nach beta 8)
+- Nachrichten ohne Nachrichten-Titel enden beim ersten Sendungstitel (§6.3, P0-b).
+- Play/Pause-Taste „geht nicht“: macOS gibt die Taste der App, die zuletzt zu spielen *begann* (Chrome um 16:24) – kein Fona-Fehler; Pause/Play in Fona holt sie zurück.
+- Titel im Kopf läuft durch, wenn er nicht passt (`Marquee`, hin und zurück, still bei „Bewegung reduzieren“).
+- Favoriten: eigene Liste statt `List` (die zeichnete beim Rechtsklick einen blauen Rahmen); Rechtsklick-Rahmen jetzt Salbei, Sortieren per Ziehen selbst gebaut (`FavoriteDrop`).
+- Zahnrad-Menü entfällt: Fußleiste mit Symbolen Zahnrad (Einstellungen, ⌘,), aufgeschlagenes Buch (Handbuch), rechts Ein/Aus (Beenden) – Canvas-Variante C ohne Text. Update-Hinweis sitzt jetzt über der Fußleiste.
+
 ### Sicherheits-Scan 2026-11-12 (Claude Security, ganzes Repo, medium, Revision c28d63e) · offen
 - Bericht lokal: `CLAUDE-SECURITY-20261112-135126/` (git-ignoriert). 2 Funde, beide LOW, je 3/3 bestätigt; 2 weitere Kandidaten 0/3 verworfen.
 - **F1 behoben 2026-11-12** (`localNets()` per getifaddrs, gilt in `choose`, URL-Literal und Peer-Recheck; 5 Checks im Katalog; live: eigene Adresse und eigenes /64 gesperrt, DLF spielt). Rest: Router-WAN-IPv4 per Hairpin-NAT ist lokal nicht erkennbar und bleibt offen. – `AddressPolicy.isPublic`: eigene IPv6-Adresse des Macs und Adressen im eigenen /64 gelten als öffentlich (auch Router-WAN-IPv4 per Hairpin-NAT) → blinde GETs an Mac/Router möglich. Korrektur: beim Verbinden `getifaddrs` lesen, eigene Adressen und On-Link-Präfixe in `choose` und Peer-Recheck ablehnen; Fälle in `CheckCatalog`.

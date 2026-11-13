@@ -31,7 +31,7 @@ Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die 
 - Datenverbrauch: Weil Deutschlandfunk mitläuft, braucht Fona etwa doppelt so viel Daten wie ein einzelner Sender – rund 115 MB pro Stunde. Ohne Umschaltung etwa die Hälfte.
 
 ## Einstellungen
-Das Zahnrad oben rechts → **Einstellungen …**: Nachrichten, Länder der Senderliste, Start beim Anmelden, Updates, Sprache, Selbsttest und Problem melden.
+Unten im Fenster: Zahnrad = **Einstellungen**, aufgeschlagenes Buch = **Handbuch**, rechts der Ein/Aus-Knopf = **Fona beenden**. In den Einstellungen: Nachrichten, Länder der Senderliste, Start beim Anmelden, Updates, Sprache, Selbsttest und Problem melden.
 
 ## Sicherheit
 - Fona läuft in der macOS-Sandbox: Es darf ins Internet, aber nicht an deine Dateien.

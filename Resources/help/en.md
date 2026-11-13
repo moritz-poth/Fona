@@ -31,7 +31,7 @@ Fona plays internet radio from the menu bar. When the news starts on Deutschland
 - Data use: because Deutschlandfunk runs alongside, Fona uses about twice the data of one station – roughly 115 MB per hour. Without the news switch about half.
 
 ## Settings
-The gear at the top right → **Settings …**: news, countries of the station list, open at login, updates, language, self-test and problem reports.
+At the bottom of the window: gear = **Settings**, open book = **Manual**, the power button on the right = **Quit Fona**. In Settings: news, countries of the station list, open at login, updates, language, self-test and problem reports.
 
 ## Security
 - Fona runs in the macOS sandbox: it may use the internet, but not your files.

@@ -15,7 +15,7 @@ struct PopoverView: View {
                 if let n = model.notice { NoticeCard(text: n) { model.notice = nil } }
                 if model.tab == .favorites { FavoritesList(model: model) } else { AllStations(model: model, settings: settings) }
                 UpdateBanner(updater: model.updater)  // sits on the footer line (user request 2026-11-13)
-                FooterBar()
+                FooterBar(settings: settings)
             }
             if model.addSheet { AddStationSheet(model: model).transition(.move(edge: .top)) }
             if let r = model.renaming { RenameSheet(model: model, station: r) }
@@ -44,7 +44,6 @@ struct Header: View {
                 }
             }
             Spacer(minLength: 0)
-            VerticalVolume(settings: model.settings)
             PlayButton(model: model)
         }
         .padding(16)
@@ -100,11 +99,14 @@ struct PlayButton: View {
 
 /// Settings, manual, quit as icons in a bar at the bottom (user's pick 2026-11-13, canvas variant C without text).
 struct FooterBar: View {
+    @ObservedObject var settings: AppSettings
     @Environment(\.openWindow) var openWindow
     var body: some View {
         HStack(spacing: 4) {
             icon("gearshape", L.t(.settingsButton)) { open("settings") }.keyboardShortcut(",")
             icon("book", L.t(.manual)) { open("manual") }
+            Spacer()
+            Volume(settings: settings)  // moved here from the header (user 2026-11-13)
             Spacer()
             icon("power", L.t(.quit)) { NSApp.terminate(nil) }
         }
@@ -570,27 +572,27 @@ struct UpdateBanner: View {
     }
 }
 
-/// Volume: a slim vertical bar left of the play button with a small speaker below (user's pick 2026-11-12,
-/// style of proposal 9). Drag or click on the bar; arrow keys when focused; VoiceOver adjustable.
-struct VerticalVolume: View {
+/// Volume: a slim horizontal bar in the footer with a small speaker left of it (style of the user's pick 2026-11-12,
+/// laid flat 2026-11-13). Drag or click on the bar; arrow keys when focused; VoiceOver adjustable.
+struct Volume: View {
     @ObservedObject var settings: AppSettings
-    static let height: CGFloat = 30
+    static let length: CGFloat = 44
     @State var hovering = false
     @State var wheelMonitor: Any?
     var body: some View {
-        VStack(spacing: 3) {
-            ZStack(alignment: .bottom) {
-                Capsule().fill(Theme.segBg).frame(width: 4, height: Self.height)
-                Capsule().fill(Theme.switchOn).frame(width: 4, height: max(4, Self.height * CGFloat(settings.volume)))
+        HStack(spacing: 5) {
+            Image(systemName: settings.volume == 0 ? "speaker.slash.fill" : "speaker.fill")
+                .font(.system(size: 9)).foregroundStyle(Theme.text2).frame(width: 12)
+                .onTapGesture { settings.volume = settings.volume == 0 ? 0.6 : 0 }  // quick mute
+            ZStack(alignment: .leading) {
+                Capsule().fill(Theme.segBg).frame(width: Self.length, height: 4)
+                Capsule().fill(Theme.switchOn).frame(width: max(4, Self.length * CGFloat(settings.volume)), height: 4)
             }
-            .frame(width: 16, height: Self.height)  // wider hit area than the 4 pt bar
+            .frame(width: Self.length, height: 16)  // taller hit area than the 4 pt bar
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0).onChanged { g in
-                settings.volume = min(1, max(0, Double(1 - g.location.y / Self.height)))
+                settings.volume = min(1, max(0, Double(g.location.x / Self.length)))
             })
-            Image(systemName: settings.volume == 0 ? "speaker.slash.fill" : "speaker.fill")
-                .font(.system(size: 9)).foregroundStyle(Theme.text2)
-                .onTapGesture { settings.volume = settings.volume == 0 ? 0.6 : 0 }  // quick mute
         }
         .focusable(true, interactions: .edit)
         .focusEffectDisabled()  // no ring or outline at all (user 2026-11-12); arrow keys still work

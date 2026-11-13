@@ -480,6 +480,7 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Titel im Kopf läuft durch, wenn er nicht passt (`Marquee`, hin und zurück, still bei „Bewegung reduzieren“).
 - Favoriten: eigene Liste statt `List` (die zeichnete beim Rechtsklick einen blauen Rahmen); Rechtsklick-Rahmen jetzt Salbei, Sortieren per Ziehen selbst gebaut (`FavoriteDrop`).
 - Zahnrad-Menü entfällt: Fußleiste mit Symbolen Zahnrad (Einstellungen, ⌘,), aufgeschlagenes Buch (Handbuch), rechts Ein/Aus (Beenden) – Canvas-Variante C ohne Text. Update-Hinweis sitzt jetzt über der Fußleiste.
+- Lautstärke aus dem Kopf in die Mitte der Fußleiste, quer, gleicher Stil, 44 statt 30 pt lang.
 
 ### Sicherheits-Scan 2026-11-12 (Claude Security, ganzes Repo, medium, Revision c28d63e) · offen
 - Bericht lokal: `CLAUDE-SECURITY-20261112-135126/` (git-ignoriert). 2 Funde, beide LOW, je 3/3 bestätigt; 2 weitere Kandidaten 0/3 verworfen.

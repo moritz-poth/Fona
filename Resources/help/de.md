@@ -7,7 +7,7 @@ Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die 
 
 ## Favoriten und Zuletzt gehört
 - Favoriten sortierst du durch Ziehen. Rechtsklick auf einen Sender: aus den Favoriten nehmen, umbenennen oder entfernen. Den laufenden Sender kannst du auch mit Rechtsklick auf seinen Namen oben umbenennen.
-- Lautstärke: der schmale Balken links neben Play. Klicken oder ziehen, mit dem Mausrad drehen, wenn der Zeiger darüber steht, oder die Pfeiltasten. Klick auf den kleinen Lautsprecher schaltet stumm.
+- Lautstärke: der schmale Balken in der Mitte der Leiste unten. Klicken oder ziehen, mit dem Mausrad drehen, wenn der Zeiger darüber steht, oder die Pfeiltasten. Klick auf den kleinen Lautsprecher schaltet stumm.
 - Play/Pause: Auch die Play/Pause-Taste der Tastatur, die Taste am Kopfhörer und das Kontrollzentrum starten und stoppen Fona (solange Fona zuletzt gespielt hat).
 - **Zuletzt gehört** zeigt die letzten zehn Sender, die keine Favoriten sind. Der Stern daneben macht sie zum Favoriten.
 

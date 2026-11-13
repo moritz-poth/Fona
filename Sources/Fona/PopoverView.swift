@@ -552,11 +552,17 @@ struct UpdateBanner: View {
     @ObservedObject var updater: AppUpdater
     var body: some View {
         if let r = updater.available {
+            VStack(alignment: .trailing, spacing: 8) {
             HStack(spacing: 8) {
                 Image(systemName: "arrow.down.circle").accessibilityHidden(true)
                 Text(verbatim: r.manual ? L.t(.installManual) : L.f(.updateAvailable, String(r.tag.dropFirst(r.tag.hasPrefix("v") ? 1 : 0))))
                     .font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 4)
+                Spacer(minLength: 0)
+            }
+            HStack(spacing: 8) {
+                if updater.state != .downloading {
+                    Button(L.t(.skipUpdate)) { updater.skip() }.buttonStyle(FieldButtonStyle())
+                }
                 if r.manual || AppUpdater.translocated {
                     Button("GitHub") { updater.openReleases() }.buttonStyle(FieldButtonStyle())
                 } else if updater.state == .downloading {
@@ -564,6 +570,7 @@ struct UpdateBanner: View {
                 } else {
                     Button(L.t(.install)) { updater.install() }.buttonStyle(FieldButtonStyle(filled: true))
                 }
+            }
             }
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.soft))

@@ -12,7 +12,7 @@ enum L {
         case support, selfTest, selfTestHint, runSelfTest, report, reportButton, showLog, likeFona, likeFonaHint, coffee
         case play, pause, settingsButton, favoriteAdd, favoriteRemove, rename, remove, quit, connecting, buffering, reconnecting
         case libraryReset, selfTestPassed, selfTestFailed, stationCount, sortedByPopularity, done
-        case updates, version, checkNow, upToDate, updateCheckFailed, updateFailed, updateAvailable, install, installManual, betas, betasHint
+        case updates, version, checkNow, upToDate, updateCheckFailed, updateFailed, updateAvailable, install, skipUpdate, installManual, betas, betasHint
         case moveToApplications, manual, about, aboutCopyright, aboutLicense, aboutWarranty, sourceCode, license, showManual
         case on, off, newsOnAir, backTo, stationNotFavourite
         case close, hideFona, closeSettings, edit, undo, redo, cut, copy, paste, selectAll, volume, clearSearch
@@ -133,6 +133,7 @@ enum L {
         case .updateFailed: return ("Das Update konnte nicht geladen oder geprüft werden.", "The update could not be downloaded or verified.")
         case .updateAvailable: return ("Fona %@ ist verfügbar.", "Fona %@ is available.")
         case .install: return ("Installieren", "Install")
+        case .skipUpdate: return ("Überspringen", "Skip")
         case .installManual: return ("Dieses Update muss von Hand installiert werden.", "This update has to be installed by hand.")
         case .betas: return ("Testversionen erhalten", "Get test versions")
         case .betasHint: return ("Vorabversionen zum Ausprobieren, können Fehler enthalten.", "Pre-releases for trying out, may contain bugs.")

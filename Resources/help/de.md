@@ -47,4 +47,4 @@ Unten im Fenster: Zahnrad = **Einstellungen**, aufgeschlagenes Buch = **Handbuch
 - **Protokoll zeigen** öffnet die Protokolldatei im Finder.
 
 ## Updates
-Fona sucht automatisch nach Updates und installiert sie nach einem Klick. Jedes Update ist signiert; ein verändertes oder älteres wird nicht installiert. Lege Fona dafür in den Programme-Ordner – aus dem Download-Ordner heraus kann es sich nicht selbst ersetzen.
+Fona sucht automatisch nach Updates (beim Start und alle 6 Stunden) und zeigt einen Hinweis unten im Fenster; installiert wird nach einem Klick. **Überspringen** blendet diese Version aus, bis eine neuere erscheint oder du in den Einstellungen selbst suchst. Jedes Update ist signiert; ein verändertes oder älteres wird nicht installiert. Lege Fona dafür in den Programme-Ordner – aus dem Download-Ordner heraus kann es sich nicht selbst ersetzen.

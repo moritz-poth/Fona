@@ -482,6 +482,7 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Zahnrad-Menü entfällt: Fußleiste mit Symbolen Zahnrad (Einstellungen, ⌘,), aufgeschlagenes Buch (Handbuch), rechts Ein/Aus (Beenden) – Canvas-Variante C ohne Text. Update-Hinweis sitzt jetzt über der Fußleiste.
 - Lautstärke aus dem Kopf in die Mitte der Fußleiste, quer, gleicher Stil, 44 statt 30 pt lang.
 - Start während laufender Nachrichten: Fona springt live hinein (erster Titel + Uhrzeit, Tabelle §6.4). Auf den Werktags-Titeln im Minutentakt nachgespielt: 1469 Startzeiten, 0 Abweichungen.
+- Update-Hinweis mit **Überspringen**: Version bleibt bei der automatischen Suche ausgeblendet (`skippedUpdate`), bis eine neuere erscheint oder der Nutzer selbst sucht.
 - Veröffentlicht 2026-11-13: Prerelease **v0.1.0-beta.9** (Nachrichten-Ende ohne Titel, Lauftext, Rechtsklick-Rahmen, Fußleiste mit Lautstärke; README-Screenshots neu).
 
 ### Sicherheits-Scan 2026-11-12 (Claude Security, ganzes Repo, medium, Revision c28d63e) · offen

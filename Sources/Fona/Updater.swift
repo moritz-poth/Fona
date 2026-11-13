@@ -41,7 +41,9 @@ final class AppUpdater: ObservableObject {
                 release = nil
                 if manual { state = .failed(L.t(.updateCheckFailed)); return }
             }
-            if let release, let new = AppVersion(release.tag), let mine = AppVersion(Self.current), mine < new {
+            if manual { settings.skippedUpdate = nil }  // a manual check shows a skipped update again
+            if let release, let new = AppVersion(release.tag), let mine = AppVersion(Self.current), mine < new,
+               release.tag != settings.skippedUpdate {
                 if available?.tag != release.tag { FileLog.shared.write("update available: \(release.tag)") }
                 available = release
                 if manual { state = .idle; MenuTarget.shared.showMenuBarWindow() }
@@ -50,6 +52,14 @@ final class AppUpdater: ObservableObject {
                 if manual { state = .upToDate }
             }
         }
+    }
+
+    /// "Skip": hide this version until a newer release or a manual check (user 2026-11-13).
+    func skip() {
+        guard let r = available else { return }
+        FileLog.shared.write("update skipped: \(r.tag)")
+        settings.skippedUpdate = r.tag
+        available = nil
     }
 
     /// Download → verify signature → hand over to FonaUpdater → quit right away (it waits until we are gone).

@@ -47,4 +47,4 @@ At the bottom of the window: gear = **Settings**, open book = **Manual**, the po
 - **Show Log** reveals the log file in the Finder.
 
 ## Updates
-Fona checks for updates automatically and installs them with one click. Every update is signed; a modified or older one is never installed. Keep Fona in the Applications folder – from the Downloads folder it cannot replace itself.
+Fona checks for updates automatically (at start and every 6 hours) and shows a note at the bottom of the window; one click installs. **Skip** hides that version until a newer one appears or you check yourself in Settings. Every update is signed; a modified or older one is never installed. Keep Fona in the Applications folder – from the Downloads folder it cannot replace itself.

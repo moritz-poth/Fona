@@ -22,6 +22,8 @@ final class AppSettings: ObservableObject {
     @Published var autoUpdateCheck: Bool { didSet { d.set(autoUpdateCheck, forKey: "autoUpdateCheck") } }
     @Published var language: Language { didSet { d.set(language.rawValue, forKey: "language"); applyLanguage() } }
     @Published var betas: Bool { didSet { d.set(betas, forKey: "betas") } }
+    /// Tag of the update the user skipped; hidden from automatic checks until a newer one or a manual check.
+    @Published var skippedUpdate: String? { didSet { d.set(skippedUpdate, forKey: "skippedUpdate") } }
     @Published var volume: Double { didSet { d.set(volume, forKey: "volume"); onVolume?(volume) } }
     var onVolume: ((Double) -> Void)?
     @Published var lastStationID: UUID? { didSet { d.set(lastStationID?.uuidString, forKey: "lastStationID") } }
@@ -44,6 +46,7 @@ final class AppSettings: ObservableObject {
         resumeOnLaunch = d.object(forKey: "resumeOnLaunch") as? Bool ?? false
         autoUpdateCheck = d.object(forKey: "autoUpdateCheck") as? Bool ?? true
         betas = d.object(forKey: "betas") as? Bool ?? false
+        skippedUpdate = d.string(forKey: "skippedUpdate").flatMap { $0.count <= 64 ? $0 : nil }  // only ever compared
         let v = d.object(forKey: "volume") as? Double ?? 0.8
         volume = v.isFinite && (0...1).contains(v) ? v : 0.8
         language = d.string(forKey: "language").flatMap(Language.init(rawValue:)) ?? .system

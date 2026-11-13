@@ -106,8 +106,7 @@ struct FooterBar: View {
             icon("gearshape", L.t(.settingsButton)) { open("settings") }.keyboardShortcut(",")
             icon("book", L.t(.manual)) { open("manual") }
             Spacer()
-            Volume(settings: settings)  // moved here from the header (user 2026-11-13)
-            Spacer()
+            Volume(settings: settings).padding(.trailing, 10)  // left of quit (user 2026-11-13)
             icon("power", L.t(.quit)) { NSApp.terminate(nil) }
         }
         .padding(.horizontal, 10).frame(height: 40)
@@ -583,7 +582,7 @@ struct UpdateBanner: View {
 /// laid flat 2026-11-13). Drag or click on the bar; arrow keys when focused; VoiceOver adjustable.
 struct Volume: View {
     @ObservedObject var settings: AppSettings
-    static let length: CGFloat = 44
+    static let length: CGFloat = 53  // 44 + 20 % (user 2026-11-13)
     @State var hovering = false
     @State var wheelMonitor: Any?
     var body: some View {
@@ -639,10 +638,13 @@ struct Volume: View {
 }
 
 /// Five bars showing the real loudness of the last moments (user's pick 2026-11-12, proposal 4). Updates only while the
-/// window is open; stands still with "Reduce motion".
+/// window is open; stands still with "Reduce motion". Scaled to the loudest moment of the last ~3 s, because radio is
+/// compressed so hard that a fixed scale sat at the top all the time (user 2026-11-13).
 struct LevelBars: View {
     let player: Player
-    @State var history: [Float] = Array(repeating: 0, count: 5)
+    @State var history: [Float] = Array(repeating: -60, count: 5)   // dBFS
+    @State var recent: [Float] = Array(repeating: -60, count: 40)   // 40 × 80 ms
+
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
@@ -652,22 +654,22 @@ struct LevelBars: View {
             TimelineView(.periodic(from: .now, by: 0.08)) { context in
                 HStack(alignment: .center, spacing: 1.5) {
                     ForEach(0..<5, id: \.self) { i in
-                        Capsule().frame(width: 2, height: Self.height(history[i]))
+                        Capsule().frame(width: 2, height: Self.height(history[i], top: recent.max() ?? -60))
                     }
                 }
                 .frame(width: 16, height: 14)
                 .onChange(of: context.date) { _, _ in
-                    history.removeFirst()
-                    history.append(player.currentLevel)
+                    let db = 20 * log10(max(player.currentLevel, 1e-6))
+                    history.removeFirst(); history.append(db)
+                    recent.removeFirst(); recent.append(db)
                 }
             }
         }
     }
 
-    /// −36 dBFS → 3 pt, −8 dBFS and louder → 14 pt (radio RMS mostly sits between −27 and −12 dB).
-    static func height(_ rms: Float) -> CGFloat {
-        let db = 20 * log10(max(rms, 1e-6))
-        let t = min(1, max(0, (db + 36) / 28))
+    /// The loudest recent moment → 14 pt, 12 dB below it (or silence) → 3 pt.
+    static func height(_ db: Float, top: Float) -> CGFloat {
+        let t = min(1, max(0, (db - (max(top, -48) - 12)) / 12))
         return 3 + 11 * CGFloat(t)
     }
 }

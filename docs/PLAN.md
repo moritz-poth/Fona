@@ -485,6 +485,7 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Update-Hinweis mit **Überspringen**: Version bleibt bei der automatischen Suche ausgeblendet (`skippedUpdate`), bis eine neuere erscheint oder der Nutzer selbst sucht.
 - Veröffentlicht 2026-11-13: Prerelease **v0.1.0-beta.9** (Nachrichten-Ende ohne Titel, Lauftext, Rechtsklick-Rahmen, Fußleiste mit Lautstärke; README-Screenshots neu).
 - Veröffentlicht 2026-11-13: Prerelease **v0.1.0-beta.10** (Start während laufender Nachrichten springt hinein, Update überspringen).
+- Lautstärke 20 % länger (53 pt), rechts neben dem Ein/Aus-Knopf. Pegelbalken skalieren auf den lautesten Moment der letzten ≈ 3 s (12 dB Bereich) statt fest −36…−8 dBFS – an radioeins gemessen ≈ 50 % mehr Ausschlag.
 
 ### Sicherheits-Scan 2026-11-12 (Claude Security, ganzes Repo, medium, Revision c28d63e) · offen
 - Bericht lokal: `CLAUDE-SECURITY-20261112-135126/` (git-ignoriert). 2 Funde, beide LOW, je 3/3 bestätigt; 2 weitere Kandidaten 0/3 verworfen.

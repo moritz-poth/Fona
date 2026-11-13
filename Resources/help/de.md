@@ -24,6 +24,7 @@ Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die 
 ## Nachrichten-Umschaltung
 - Schalte sie oben im Fenster mit dem Schalter **Nachrichten-Umschaltung** ein oder aus.
 - Fona hört Deutschlandfunk dafür stumm mit und erkennt den Beginn der Nachrichten am **Zeitzeichen** (die Pieptöne vor den Nachrichten) und am Sendungstitel. Gespielt wird ab dem ersten Piepton – es fehlt kein Wort.
+- Startest du Fona, während die Nachrichten schon laufen, springt Fona sofort hinein (live, ab da wo sie gerade sind).
 - Danach geht es live mit deinem Sender weiter. **Jetzt zurück** beendet die Nachrichten sofort.
 - Hörst du Deutschlandfunk selbst oder hast du angehalten, schaltet Fona nichts um.
 - **Einstellungen → Zeitplan:** Fona lauscht nur rund um die volle Stunde (oder volle und halbe Stunde). Deutschlandfunk sendet nachts stündlich, tagsüber auch zur halben Stunde.

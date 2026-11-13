@@ -24,6 +24,7 @@ Fona plays internet radio from the menu bar. When the news starts on Deutschland
 ## News switch
 - Turn it on or off with the **News Switch** at the top of the window.
 - Fona listens to Deutschlandfunk silently and recognises the start of the news by the **time signal** (the beeps before the news) and by the programme title. Playback starts with the first beep – not a word is missed.
+- If you start Fona while the news is already on, it jumps straight in (live, from where the bulletin is).
 - Afterwards your station continues live. **Back Now** ends the news at once.
 - If you listen to Deutschlandfunk yourself or have paused, Fona switches nothing.
 - **Settings → Schedule:** Fona only listens around the full hour (or full and half hour). Deutschlandfunk has news hourly at night and also at half past during the day.

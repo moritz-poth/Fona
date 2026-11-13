@@ -228,7 +228,7 @@ titleRule: ^Nachrichten\b (ohne Groß/Klein) · scheduleWindow: ±90 s um :00 (u
 | `nachrichten` | Programmstream fällt aus | Nachrichten zu Ende spielen, dann Wiederverbinden (§5) | `nachrichten` |
 | `sperre` | 10 min vergangen | – | `bereit` |
 | beliebig | Umschaltung aus | ggf. zurück, Kette stoppen | `aus` |
-| `bereit` beim Start | Titel passt schon | **nicht** auslösen (Mitte der Sendung) | `bereit` |
+| `bereit` beim Start | erster Titel = Nachrichten ≤ 10 min nach :00/:30, oder reiner Sendername ≤ 5 min nach :00 | live überblenden (Nutzer 2026-11-13; Grenzen ab Ausgabebeginn) | `nachrichten` |
 
 Jede Zeile hat einen Test mit simulierter Uhr und simulierten Signalen.
 
@@ -481,6 +481,7 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Favoriten: eigene Liste statt `List` (die zeichnete beim Rechtsklick einen blauen Rahmen); Rechtsklick-Rahmen jetzt Salbei, Sortieren per Ziehen selbst gebaut (`FavoriteDrop`).
 - Zahnrad-Menü entfällt: Fußleiste mit Symbolen Zahnrad (Einstellungen, ⌘,), aufgeschlagenes Buch (Handbuch), rechts Ein/Aus (Beenden) – Canvas-Variante C ohne Text. Update-Hinweis sitzt jetzt über der Fußleiste.
 - Lautstärke aus dem Kopf in die Mitte der Fußleiste, quer, gleicher Stil, 44 statt 30 pt lang.
+- Start während laufender Nachrichten: Fona springt live hinein (erster Titel + Uhrzeit, Tabelle §6.4). Auf den Werktags-Titeln im Minutentakt nachgespielt: 1469 Startzeiten, 0 Abweichungen.
 - Veröffentlicht 2026-11-13: Prerelease **v0.1.0-beta.9** (Nachrichten-Ende ohne Titel, Lauftext, Rechtsklick-Rahmen, Fußleiste mit Lautstärke; README-Screenshots neu).
 
 ### Sicherheits-Scan 2026-11-12 (Claude Security, ganzes Repo, medium, Revision c28d63e) · offen

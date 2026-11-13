@@ -32,6 +32,10 @@ public struct NewsLogic: Sendable {
         public var hardMaxMinutes = 12.0
         public var cooldownMinutes = 10.0
         public var titleReplaySeconds = 4.0
+        /// Joining late (user 2026-11-13): a news title up to this long after :00/:30 switches over right away …
+        public var lateJoinMinutes = 10.0
+        /// … the bare station name only after a full hour (09:00/00:00 bulletins have no news title, P0-b).
+        public var lateJoinNoTitleMinutes = 5.0
         public var calendar = Calendar(identifier: .gregorian)
         public init() {}
     }
@@ -67,6 +71,16 @@ public struct NewsLogic: Sendable {
         return marks.contains { abs(secOfHour - $0) <= config.windowSeconds }
     }
 
+    /// Start of the bulletin that is running now, judged from the first title and the clock; nil = no news now.
+    func runningBulletinStart(title t: String, now: Date) -> Date? {
+        let c = config.calendar.dateComponents([.minute, .second], from: now)
+        let secOfHour = Double((c.minute ?? 0) * 60 + (c.second ?? 0))
+        let sinceMark = config.halfHours ? secOfHour.truncatingRemainder(dividingBy: 1800) : secOfHour
+        let ok = Self.isNewsTitle(t) ? sinceMark <= config.lateJoinMinutes * 60
+            : Self.isStationName(t) && secOfHour <= config.lateJoinNoTitleMinutes * 60
+        return ok ? now.addingTimeInterval(-sinceMark) : nil
+    }
+
     var shouldWatch: Bool { enabled && programPlaying && !programIsNews }
 
     public mutating func handle(_ e: Event, now: Date) -> [Action] {
@@ -82,6 +96,13 @@ public struct NewsLogic: Sendable {
         case (.ready, .tone(let ago)) where inScheduleWindow(now):
             state = .news(since: now, titleSeen: lastTitleMatched == true)
             return [.fadeToNews(replaySeconds: ago)]
+        case (.ready, .title(let t)) where lastTitleMatched == nil:
+            // first title after the chain started: the bulletin may already be running (app started at 12:02)
+            let matched = Self.isNewsTitle(t)
+            lastTitleMatched = matched
+            guard let mark = runningBulletinStart(title: t, now: now) else { return [] }
+            state = .news(since: mark, titleSeen: matched)  // limits count from the bulletin's start
+            return [.fadeToNews(replaySeconds: 0)]
         case (.ready, .title(let t)):
             let matched = Self.isNewsTitle(t)
             defer { lastTitleMatched = matched }

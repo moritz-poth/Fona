@@ -64,11 +64,30 @@ func logic(enabled: Bool = true, playing: Bool = true) -> (NewsLogic, Clock) {
     #expect(l.handle(.title("Nachrichten"), now: c.at(12, 0, 4)) == [.fadeToNews(replaySeconds: 4)])
 }
 
-@Test func titleAlreadyNewsAtStartDoesNotTrigger() {
+@Test func startingDuringTheNewsJumpsIn() {
     var (l, c) = logic(playing: false)
-    _ = l.handle(.title("Nachrichten"), now: c.at(12, 2))           // watcher sees the middle of a bulletin
+    _ = l.handle(.title("Nachrichten"), now: c.at(12, 2))           // seen before the programme played: ignored
     _ = l.handle(.program(playing: true, isNewsStation: false), now: c.at(12, 2))
-    #expect(l.handle(.title("Nachrichten"), now: c.at(12, 2, 20)) == [])
+    #expect(l.handle(.title("Nachrichten"), now: c.at(12, 2, 20)) == [.fadeToNews(replaySeconds: 0)])
+    #expect(l.state == .news(since: c.at(12, 0), titleSeen: true))
+    #expect(l.handle(.title("Informationen am Mittag"), now: c.at(12, 5, 5)) == [.fadeToProgram])
+}
+
+@Test func startingDuringATitlelessBulletinJumpsInOnlyAfterTheFullHour() {
+    var (l, c) = logic()
+    #expect(l.handle(.title("Deutschlandfunk - Alles von Relevanz"), now: c.at(9, 1, 30)) == [.fadeToNews(replaySeconds: 0)])
+    #expect(l.handle(.title("Kalenderblatt"), now: c.at(9, 5, 17)) == [.fadeToProgram])
+    var (m, d) = logic()
+    #expect(m.handle(.title("Deutschlandfunk"), now: d.at(18, 31)) == [])   // half hour: filler, no bulletin
+    var (n, e) = logic()
+    #expect(n.handle(.title("Deutschlandfunk"), now: e.at(9, 6)) == [])     // too late for a guess
+}
+
+@Test func startingOutsideTheNewsStaysOnTheProgramme() {
+    var (l, c) = logic()
+    #expect(l.handle(.title("Nachrichten"), now: c.at(12, 11)) == [])       // > 10 min after the hour
+    var (m, d) = logic()
+    #expect(m.handle(.title("Informationen am Mittag"), now: d.at(12, 2)) == [])
 }
 
 @Test func backNowAndFailureAndHardLimit() {
@@ -115,11 +134,10 @@ func newsTitleRule(_ t: String, _ expected: Bool) { #expect(NewsLogic.isNewsTitl
     #expect(!l.inScheduleWindow(c.at(11, 30, 50)))
 }
 
-@Test func firstTitleAfterChainStartIsOnlyTheBaseline() {
+@Test func firstTitleAfterChainStartIsOnlyTheBaselineOutsideTheNews() {
     var (l, c) = logic()  // chain just started at 11:50
-    #expect(l.handle(.title("Nachrichten"), now: c.at(12, 0, 20)) == [])   // joined mid-bulletin: stay
-    #expect(l.handle(.title("Musik"), now: c.at(12, 5)) == [])
-    #expect(l.handle(.title("Nachrichten"), now: c.at(12, 30, 3)) == [.fadeToNews(replaySeconds: 4)])
+    #expect(l.handle(.title("Musik"), now: c.at(11, 50, 5)) == [])
+    #expect(l.handle(.title("Nachrichten"), now: c.at(12, 0, 3)) == [.fadeToNews(replaySeconds: 4)])
 }
 
 @Test func titlelessNewsEndsAtFirstProgrammeTitle() {

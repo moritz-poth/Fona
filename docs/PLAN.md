@@ -333,8 +333,15 @@ Spike: `spikes/p0a/` (sandboxed App + nicht sandboxed Hilfsprogramm in `Contents
 - Offen: macOS 14 (kein Testgerät hier) – vor dem ersten Release auf einem 14er-Mac wiederholen; erst dann ist das eigene Zertifikat endgültig vom Tisch.
 - Rest: ein leerer Container-Ordner `io.github.moritz-poth.fona.spike` bleibt (macOS schützt ihn vor dem Löschen per Terminal; im Finder löschbar).
 
-### P0-b Nachrichten-Messung – läuft
-24,5-h-Mitschnitt gestartet 2026-11-12 00:20 (`scripts/record-dlf.py` → `design/research/24h/`, stündliche Dateien + `titles.log`). Wochenende folgt.
+### P0-b Nachrichten-Messung – Werktag ausgewertet 2026-11-13 · Ergebnis: **Ja**; Wochenende offen
+24,5-h-Mitschnitt 2026-11-12 00:20 – 2026-11-13 00:50 (`scripts/record-dlf.py` → `design/research/24h/`, stündliche Dateien + `titles.log`), geprüft mit `fona-tonescan` (Stundengrenzen als zusammengefügte 60-s-Stücke, weil das Zeitzeichen um :59:58 über zwei Dateien läuft).
+- **Zeitzeichen: 38 von 38 Ausgaben, 0 Fehlalarme** – alle 24 vollen Stunden (01:00 … 00:00) und alle 14 halben (04:30 … 17:30). Langer Piep 0,75–0,80 s, Beginn ≈ 2 s vor der Stunde.
+- Zeitplan: volle Stunde rund um die Uhr, halbe Stunde nur 04:30–17:30 (nicht 00:30–03:30 und 18:30–23:30).
+- **Titel fehlt bei 2 von 24 vollen Stunden (09:00, 00:00)** – dort nur „Deutschlandfunk“ / „Deutschlandfunk - Alles von Relevanz“, erster Sendungstitel nach ≈ 5:15 min. Mit der Höchstdauer 10 min liefe dann ≈ 5 min DLF-Programm statt des eigenen Senders → Ende-Regel offen (siehe unten).
+- Titel erscheint 1–7 s nach der Stunde; Dauer (Titel an → aus): halbe Stunde 4:19–5:10, volle Stunde 4:59–5:05 oder 9:48–10:07 (06, 08, 10, 12, 13, 14, 16, 18, 20, 23 Uhr). Längste Ausgabe ab Zeitzeichen ≈ 10:12.
+- Titelregel `^Nachrichten\b` hält: „Nachrichtendienstreform: …“ (15:36, @mediasres) passt nicht; liegt zudem außerhalb des Zeitfensters.
+- Reconnects des Rekorders nur um xx:20 (Stream bricht alle 6 h ab), keine Lücke an einer Nachrichtenausgabe.
+- **Offen:** Ende ohne Nachrichten-Titel – Vorschlag: Episode endet beim ersten Titel, der weder `^Nachrichten\b` noch reiner Sendername („Deutschlandfunk…“) ist; Höchstdauer bleibt als Rückfall.
 
 ### P0-c HLS – 2026-11-12 · Ergebnis: **Ja** (Dekodierung); Dauertest → P3
 Spike: `spikes/p0c/main.swift` (eigener TS-Demuxer PAT/PMT/PES → ADTS → `AudioFileStream` + `AVAudioConverter`).

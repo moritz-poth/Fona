@@ -15,7 +15,7 @@ public enum StreamEvent: Sendable {
 /// strips ICY metadata (S3), lets only valid frames through (S5) and sanitizes titles (S4).
 public enum StreamSource {
     public static func open(_ url: String, gate: NetGate = .shared, depth: Int = 0) async throws -> AsyncThrowingStream<StreamEvent, Error> {
-        let r = try await gate.open(url, .stream)
+        let r = try await gate.open(url, .stream, fromServer: depth > 0)  // depth 1 = entry of a station's playlist
         var icy = r.head.icyMetaInt.flatMap(IcyDemuxer.init(metaInt:))
         var it = r.body.makeAsyncIterator()
         var head = Data()

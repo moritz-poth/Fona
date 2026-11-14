@@ -11,6 +11,7 @@ public enum Rejection: Error, Equatable, Sendable {
     case hostNotAllowed
     case noAddress
     case privateAddress
+    case ipFromServer
     case tooManyRedirects
     case redirectLoop
     case downgrade
@@ -40,6 +41,7 @@ public enum Rejection: Error, Equatable, Sendable {
         case .hostNotAllowed: return "host-not-allowed"
         case .noAddress: return "no-address"
         case .privateAddress: return "private-address"
+        case .ipFromServer: return "ip-from-server"
         case .tooManyRedirects: return "too-many-redirects"
         case .redirectLoop: return "redirect-loop"
         case .downgrade: return "downgrade"
@@ -62,7 +64,7 @@ public enum Rejection: Error, Equatable, Sendable {
 
     /// One representative of every case, for the completeness test of `Messages`.
     public static let allExamples: [Rejection] = [
-        .badURL, .scheme("file"), .credentialsInURL, .urlTooLong, .hostName, .hostNotAllowed, .noAddress, .privateAddress,
+        .badURL, .scheme("file"), .credentialsInURL, .urlTooLong, .hostName, .hostNotAllowed, .noAddress, .privateAddress, .ipFromServer,
         .tooManyRedirects, .redirectLoop, .downgrade, .headerTooLong, .headerTimeout, .badStatusLine, .httpStatus(404),
         .contentEncoding, .blockedContentType, .bodyTooLarge, .badChunk, .notAudio, .connectTimeout, .stalled, .tooSlow,
         .tls, .network,

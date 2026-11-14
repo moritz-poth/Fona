@@ -419,7 +419,7 @@ struct SongSearchMenu: View {
     }
     func open(_ s: MusicSearch) {
         // only with artist and track from the metadata; otherwise our own notice, no search (user 2026-11-14)
-        guard model.isPlaying, let title = MusicSearch.track(model.title, station: model.current?.displayName) else {
+        guard let title = model.lastTrack else {
             model.showToast(L.t(.noTrackInfo)); return
         }
         let installed = s.appBundleID.map { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) != nil } ?? false

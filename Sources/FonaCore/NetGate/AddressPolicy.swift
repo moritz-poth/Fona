@@ -63,10 +63,16 @@ public enum AddressPolicy {
     /// Public = not in a special block AND not the Mac itself or a neighbour on one of its links (security scan F1:
     /// global IPv6 makes the own address and the /64 look public). `local` is injectable for the check catalogue.
     public static func isPublic(_ a: IPAddress, local: [Net] = localNets()) -> Bool {
-        if local.contains(where: { $0.prefix.count == a.bytes.count && matches(a.bytes, $0.prefix, $0.bits) }) { return false }
+        if local.contains(where: { $0.prefix.count == a.bytes.count && matches(a.bytes, $0.prefix, homeBits($0)) }) { return false }
         if a.isV4 { return !blockedV4.contains { matches(a.bytes, $0.prefix, $0.bits) } }
         guard a.bytes[0] & 0xE0 == 0x20 else { return false }
         return !blockedV6InGlobal.contains { matches(a.bytes, $0.prefix, $0.bits) }
+    }
+
+    /// A global IPv6 address counts with its provider-delegated /56, not just the on-link /64: the other /64s of the
+    /// home's prefix (guest net, second router) are the home too (security scan 2026-11-14 F1).
+    static func homeBits(_ n: Net) -> Int {
+        n.prefix.count == 16 && n.prefix[0] & 0xE0 == 0x20 ? min(n.bits, 56) : n.bits
     }
 
     /// N4: every resolved address must be public; the first one is used for the connection.

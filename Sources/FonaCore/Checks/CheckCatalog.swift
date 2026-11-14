@@ -136,7 +136,20 @@ public enum CheckCatalog {
             localNet("local-own-v6", "2a02:810:1:2::abcd", refused: true),
             localNet("local-onlink-router-v6", "2a02:810:1:2::1", refused: true),
             localNet("local-own-public-v4", "93.184.216.34", refused: true),
-            localNet("local-other-v6-allowed", "2a02:810:1:3::1", refused: false),
+            localNet("local-sibling-v6-same-56", "2a02:810:1:3::1", refused: true),   // other /64 of the home's /56
+            localNet("local-other-v6-allowed", "2a02:810:1:100::1", refused: false),  // next /56: someone else
+            refuseRedirect("redirect-to-ip-literal", from: "https://radio.example.com/s", to: "http://93.184.216.35:80/cgi-bin/x", .stream),
+            refuseRedirect("redirect-to-ipv6-literal", from: "https://radio.example.com/s", to: "http://[2a00:1450:4001:80b::200e]/", .stream),
+            Check(id: "playlist-entry-ip-literal", area: "attack") {
+                // a .pls/.m3u entry comes from the station's server: a bare IP is refused there (scan 2026-11-14 F1)
+                if case .success(let u) = URLPolicy.check("http://93.184.216.35:8080/;", .stream, fromServer: true) { return "accepted \(u.text)" }
+                return nil
+            },
+            Check(id: "hls-segment-ip-literal", area: "attack") {
+                guard case .success(let base) = URLPolicy.check("https://cdn.example.com/live/index.m3u8", .playlist) else { return "base refused" }
+                if case .success(let u) = URLPolicy.check("http://93.184.216.35/seg1.ts", .segment, relativeTo: base) { return "accepted \(u.text)" }
+                return nil
+            },
             Check(id: "local-real-interfaces", area: "attack") {
                 let own = AddressPolicy.localNets().compactMap { IPAddress(bytes: $0.prefix) }
                 return own.first(where: { AddressPolicy.isPublic($0) }).map { "own address \($0) counts as public" }

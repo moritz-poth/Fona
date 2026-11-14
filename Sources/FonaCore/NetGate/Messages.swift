@@ -19,6 +19,7 @@ public enum Messages {
         case .hostName: return ("Diese Adresse ist nicht erlaubt.", "This address is not allowed.")
         case .hostNotAllowed: return ("Dieser Server ist für diese Aufgabe nicht erlaubt.", "This server is not allowed for this task.")
         case .noAddress: return ("Der Server wurde nicht gefunden.", "The server could not be found.")
+        case .ipFromServer: return ("Der Sender leitet auf eine reine IP-Adresse weiter. Das lässt Fona aus Sicherheitsgründen nicht zu.", "The station forwards to a bare IP address. Fona does not allow that for security reasons.")
         case .privateAddress: return ("Sender im Heimnetz oder auf diesem Mac sind aus Sicherheitsgründen gesperrt.", "Stations on your home network or on this Mac are blocked for security reasons.")
         case .tooManyRedirects: return ("Der Link leitet zu oft weiter.", "The link redirects too many times.")
         case .redirectLoop: return ("Der Link leitet im Kreis weiter.", "The link redirects in a loop.")

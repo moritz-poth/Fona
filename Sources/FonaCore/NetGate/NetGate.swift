@@ -26,8 +26,9 @@ public final class NetGate: @unchecked Sendable {
         public let cancel: @Sendable () -> Void
     }
 
-    public func open(_ text: String, _ cls: RequestClass) async throws -> Response {
-        try await open(text, cls, body: nil)
+    /// `fromServer`: the URL came from another server's answer (a playlist entry) – see URLPolicy.check.
+    public func open(_ text: String, _ cls: RequestClass, fromServer: Bool = false) async throws -> Response {
+        try await open(text, cls, body: nil, fromServer: fromServer)
     }
 
     /// POST with a JSON body – only for the `report` class (bounded, https, fixed host).
@@ -40,8 +41,8 @@ public final class NetGate: @unchecked Sendable {
         return (r, data)
     }
 
-    func open(_ text: String, _ cls: RequestClass, body: Data?) async throws -> Response {
-        var url = try URLPolicy.check(text, cls).get()
+    func open(_ text: String, _ cls: RequestClass, body: Data?, fromServer: Bool = false) async throws -> Response {
+        var url = try URLPolicy.check(text, cls, fromServer: fromServer).get()
         var visited = [url.text]
         while true {
             let conn = try await connect(url)

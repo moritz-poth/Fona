@@ -21,7 +21,11 @@ public enum URLPolicy {
     static let blockedSuffixes = [".local", ".localhost", ".home.arpa", ".internal", ".lan", ".intranet", ".corp", ".home"]
 
     /// N1–N3 (+ class host list). Pure: no network.
-    public static func check(_ text: String, _ cls: RequestClass, relativeTo base: CheckedURL? = nil) -> Result<CheckedURL, Rejection> {
+    /// `fromServer`: the URL came out of a server's answer (redirect, playlist entry, HLS variant or segment – every
+    /// `relativeTo` call is one). Those must name a host, never a bare IP: a hostile station learns the listener's
+    /// public address from the connection and would otherwise point Fona at the home router (security scan
+    /// 2026-11-14 F1). IP links the user or the directory gives directly still work.
+    public static func check(_ text: String, _ cls: RequestClass, relativeTo base: CheckedURL? = nil, fromServer: Bool = false) -> Result<CheckedURL, Rejection> {
         guard text.utf8.count <= Limits.maxURLLength else { return .failure(.urlTooLong) }
         let trimmed = text.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty, !trimmed.contains(where: { $0.isNewline || $0 == "\0" }) else { return .failure(.badURL) }
@@ -46,6 +50,7 @@ public enum URLPolicy {
             guard validName(host) else { return .failure(.hostName) }
         }
         if let literal, !AddressPolicy.isPublic(literal) { return .failure(.privateAddress) }
+        if literal != nil, fromServer || base != nil { return .failure(.ipFromServer) }
         guard cls.hostAllowed(host) else { return .failure(.hostNotAllowed) }
 
         let port = comps.port ?? (scheme == "https" ? 443 : 80)

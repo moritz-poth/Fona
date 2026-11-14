@@ -44,6 +44,7 @@ struct Header: View {
                 }
             }
             Spacer(minLength: 0)
+            if !model.title.isEmpty { SongSearchMenu(title: model.title) }
             PlayButton(model: model)
         }
         .padding(16)
@@ -69,15 +70,12 @@ struct NewsHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                StationLogo(initials: "DLF", size: 48, active: true)
+                StationLogo(initials: "DLF", size: 48, active: true, bars: model.player)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(L.language == .de ? "NACHRICHTEN" : "NEWS").font(.system(size: 10, weight: .bold)).tracking(0.4)
                         .foregroundStyle(Theme.bg).padding(.horizontal, 6).padding(.vertical, 2)
                         .background(RoundedRectangle(cornerRadius: 4).fill(Theme.text))
-                    HStack(spacing: 8) {
-                        Text(verbatim: "Deutschlandfunk").font(.system(size: 14, weight: .semibold))
-                        LevelBars(player: model.player).accessibilityHidden(true)
-                    }
+                    Text(verbatim: "Deutschlandfunk").font(.system(size: 14, weight: .semibold))
                 }
                 Spacer(minLength: 0)
                 PlayButton(model: model)
@@ -202,16 +200,13 @@ struct StationRow: View {
         let newsRow = model.newsActive && model.isPlaying && NewsWatcher.isNewsStation(station.url)
         let bars = model.newsActive ? newsRow : isCurrent
         HStack(spacing: 10) {
-            StationLogo(initials: station.initials, active: isCurrent)
+            StationLogo(initials: station.initials, active: isCurrent, bars: bars ? model.player : nil)
             Text(verbatim: station.displayName).fontWeight(isCurrent ? .semibold : .regular).lineLimit(1).truncationMode(.middle)
             Spacer(minLength: 4)
             if star {
                 Button { model.toggleFavorite(station) } label: { Image(systemName: "star").foregroundStyle(Theme.text2) }
                     .buttonStyle(.plain).frame(width: 24, height: 24)
                     .accessibilityLabel("\(station.displayName) – \(L.t(.favoriteAdd))")
-            }
-            if bars {
-                LevelBars(player: model.player).accessibilityHidden(true)
             }
             Menu { menuItems } label: {
                 Image(systemName: "ellipsis").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.text2)
@@ -368,24 +363,27 @@ struct AllStations: View {
                     else {
                         Text(L.t(.sortedByName)).font(.system(size: 11)).foregroundStyle(Theme.text2)
                             .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20)
-                        List {
-                            ForEach(model.browse.shown) { r in ResultRow(model: model, result: r).listRowSeparator(.hidden)
-                                .listRowInsets(EdgeInsets(top: 0, leading: 6, bottom: 0, trailing: 10)) }
-                            if !model.browse.finished {
-                                ProgressView().controlSize(.small).frame(maxWidth: .infinity).listRowSeparator(.hidden)
-                                    .onAppear { model.browseMore() }
+                        // ScrollView, not List: List kept its own right gutter and the star sat too far left (user 2026-11-14)
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(model.browse.shown) { r in ResultRow(model: model, result: r) }
+                                if !model.browse.finished {
+                                    ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(8)
+                                        .onAppear { model.browseMore() }
+                                }
                             }
+                            .padding(.horizontal, 6)
                         }
-                        .listStyle(.plain).scrollContentBackground(.hidden)
                     }
                 }
                 else if model.results.isEmpty { Text(L.t(.noResults)).foregroundStyle(Theme.text2).padding() }
                 else {
                     Text(verbatim: L.f(.stationCount, model.results.count) + " · " + L.t(.sortedByPopularity))
                         .font(.system(size: 11)).foregroundStyle(Theme.text2).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20)
-                    List(model.results) { r in ResultRow(model: model, result: r).listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 6, bottom: 0, trailing: 10)) }
-                        .listStyle(.plain).scrollContentBackground(.hidden)
+                    ScrollView {
+                        LazyVStack(spacing: 0) { ForEach(model.results) { r in ResultRow(model: model, result: r) } }
+                            .padding(.horizontal, 6)
+                    }
                 }
             }
             Spacer(minLength: 0)
@@ -394,9 +392,32 @@ struct AllStations: View {
     }
 }
 
+/// Looks the current track up at a streaming service: its app when installed, else its website (user 2026-11-14).
+struct SongSearchMenu: View {
+    let title: String
+    var body: some View {
+        Menu {
+            ForEach(MusicSearch.allCases, id: \.self) { s in
+                Button(s.rawValue) { open(s) }
+            }
+        } label: {
+            Image(systemName: "magnifyingglass").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.text2)
+                .frame(width: 28, height: 28).contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+        .help(L.t(.findSong)).accessibilityLabel(L.t(.findSong))
+    }
+    func open(_ s: MusicSearch) {
+        let installed = s.appBundleID.map { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) != nil } ?? false
+        if installed, let u = s.appURL(title) { NSWorkspace.shared.open(u) }
+        else if let u = s.webURL(title, german: L.language == .de) { NSWorkspace.shared.open(u) }
+    }
+}
+
 struct ResultRow: View {
     @ObservedObject var model: AppModel
     let result: RadioBrowser.Result
+    @State private var hovering = false
     var body: some View {
         let fav = model.isFavorite(url: result.url)
         let s = result.station()
@@ -422,8 +443,10 @@ struct ResultRow: View {
             .buttonStyle(.plain)
             .accessibilityLabel(fav ? L.t(.favoriteRemove) : L.t(.favoriteAdd))
             .accessibilityValue(result.name)
-            .padding(.trailing, 4)
         }
+        .padding(.trailing, 8)
+        .background(RoundedRectangle(cornerRadius: 7).fill(hovering ? Theme.text2.opacity(0.08) : .clear))
+        .onHover { hovering = $0 }
     }
     var meta: String {
         var parts: [String] = []

@@ -99,3 +99,14 @@ func liveRadioBrowserSearch() async throws {
     #expect(m.shown.map(\.name) == ["Alpha", "bravo", "Delta", "Echo", "Zulu"] && m.finished)
     #expect(AlphaMerge(countries: []).keys == [""])
 }
+
+@Test func musicSearchKeepsHostileTitlesInsideTheQuery() {
+    let evil = "AC/DC - Back?In&Black#x/../@evil.com\u{202E}"
+    for s in MusicSearch.allCases {
+        let web = s.webURL(evil, german: true)!
+        #expect(web.scheme == "https" && ["open.spotify.com", "music.apple.com", "music.amazon.de"].contains(web.host!))
+        #expect(!web.absoluteString.contains("evil.com/") && !web.absoluteString.contains("&Black") && !web.absoluteString.contains("#"))
+    }
+    #expect(MusicSearch.spotify.appURL("Nils Frahm - Says")?.absoluteString == "spotify:search:Nils%20Frahm%20Says")
+    #expect(MusicSearch.appleMusic.appURL("   ") == nil && MusicSearch.amazonMusic.appURL("x") == nil)
+}

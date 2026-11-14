@@ -493,6 +493,7 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Veröffentlicht 2026-11-14: Prerelease **v0.1.0-beta.12** („Jetzt zurück“ lässt „Zu den Nachrichten“ stehen, Pegelbalken bei Deutschlandfunk während der Nachrichten, „…“-Menü an Senderzeilen, Favoriten-Ziehen repariert).
 - Veröffentlicht 2026-11-14: Prerelease **v0.1.0-beta.13** (DLF-Erkennung nur noch `/dlf/01/` – Nova bekam Pegelbalken und keinen Nachrichtenwechsel; Hover-Ton an Senderzeilen; DLF-Zeile während der Nachrichten halb markiert; 20-ms-Einblendung bei jedem Stream-Start gegen Knacken).
 - Veröffentlicht 2026-11-14: Prerelease **v0.1.0-beta.14** (Alle Sender ohne Suche = ganzes radio-browser-Verzeichnis der gewählten Länder A–Z, 200 pro Seite beim Scrollen, Länder per AlphaMerge gemischt; Laufschrift läuft ganz durch und startet nach 2 s neu; Zuletzt gehört ohne Zeit, Stern in der Zeile links der Pegelbalken).
+- Veröffentlicht 2026-11-14: Prerelease **v0.1.0-beta.15** (Lupe neben Play sucht den Titel bei Spotify/Apple Music/Amazon Music – App wenn installiert, sonst Website, MusicSearch in FonaCore; Pegelbalken im Sender-Icon statt rechts; Trefferlisten als ScrollView mit Hover, Stern rechtsbündig).
 
 ### Sicherheits-Scan 2026-11-12 (Claude Security, ganzes Repo, medium, Revision c28d63e) · offen
 - Bericht lokal: `CLAUDE-SECURITY-20261112-135126/` (git-ignoriert). 2 Funde, beide LOW, je 3/3 bestätigt; 2 weitere Kandidaten 0/3 verworfen.

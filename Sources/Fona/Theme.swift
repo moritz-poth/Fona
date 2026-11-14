@@ -1,4 +1,5 @@
 import SwiftUI
+import FonaCore
 
 /// Colours from the design canvas (design/canvas, Aqua-Salbei). Text on pastel is always dark ink (≥ 11:1).
 enum Theme {
@@ -74,8 +75,11 @@ struct StationLogo: View {
     let initials: String
     var size: CGFloat = 28
     var active = false
+    var bars: Player?  // level bars in place of the initials while this station is heard (user 2026-11-14)
     var body: some View {
-        Text(verbatim: initials)
+        Group {
+            if let bars { LevelBars(player: bars).scaleEffect(size / 28) } else { Text(verbatim: initials) }
+        }
             .font(.system(size: size * 0.38, weight: .bold))
             .foregroundStyle(active ? Theme.ink : Theme.text)
             .frame(width: size, height: size)

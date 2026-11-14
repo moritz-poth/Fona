@@ -202,3 +202,48 @@ def learn_end(fp, news0, a0=60, a1=900, share=0.6):
     sc = [scan(w, tpl).min() for w in W]
     return dict(template=tpl, at_s=(b / FPS + a0), threshold=float(min(0.45, sorted(sc)[len(sc) * 2 // 3] + 0.1)),
                 scores=[round(float(x), 2) for x in sc])
+
+
+def learn_starts(fp, starts, train, pre=120, post=150, window_s=90, step_s=1.0, max_markers=6):
+    """Greedy set cover: several markers per station (day/night, weekday/weekend intros).
+    Candidates: any 2/3/4 s stretch that repeats in at least two :00/:30 windows of the training hours.
+    A candidate is kept only if it never matches outside the :00/:30 windows of the whole training span.
+    Returns [dict(template, offset_s, threshold, hits)] (hits = indices of training marks it explains)."""
+    all_starts = sorted(starts.values())
+    tops = sorted({starts[h] + int(m * FPS) for h in train for m in (0, 1800)})
+    tops = [t for t in tops if t - pre * FPS >= 0 and t + post * FPS < len(fp)]
+    W = [fp[t - int(pre * FPS): t + int(post * FPS)] for t in tops]
+    cov = coverage_fast(W, 90) * (len(W) - 1)  # absolute number of other windows
+    n0 = max(0, min(tops) - int(300 * FPS)); n1 = min(len(fp), max(tops) + int(1800 * FPS))
+    span = fp[n0:n1]
+    excl = np.zeros(len(span), dtype=bool)
+    for p in marks_in(n0, n1, all_starts, True):
+        excl[max(0, p - n0 - int(window_s * FPS)): p - n0 + int(window_s * FPS)] = True
+    rel = [t - n0 for t in tops]
+    cands = []
+    seen = set()
+    for wi, w in enumerate(W):
+        for a, b in regions(cov[wi] >= 1, int(2.0 * FPS)):
+            for length in (2.0, 4.0):
+                T = int(length * FPS)
+                for s in range(a, b - T + 1, int(step_s * FPS)):
+                    tpl = w[s:s + T]
+                    key = (round((s - pre * FPS) / FPS), length, tuple(tpl[:4].tolist()))
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    sc = scan(span, tpl)
+                    neg = float(sc[~excl[:len(sc)]].min())
+                    thr = min(0.40, neg - 0.25)  # demand a clear gap to everything outside the windows
+                    if thr < 0.15:
+                        continue
+                    hit = {i for i, t in enumerate(rel) if sc[max(0, t - int(window_s * FPS)): t + int(window_s * FPS)].min() < thr}
+                    if len(hit) >= 2:
+                        cands.append(dict(template=tpl, offset_s=(s - pre * FPS) / FPS, threshold=thr, neg=neg, hits=hit, length=length))
+    chosen, covered = [], set()
+    while len(chosen) < max_markers:
+        best = max(cands, key=lambda c: (len(c["hits"] - covered), c["neg"]), default=None)
+        if not best or len(best["hits"] - covered) < 2:
+            break
+        chosen.append(best); covered |= best["hits"]
+    return chosen, tops

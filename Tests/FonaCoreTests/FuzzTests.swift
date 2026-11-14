@@ -121,6 +121,20 @@ struct Rng {
     }
 }
 
+@Test func fuzzMusicSearch() {
+    var r = Rng(x: 11)
+    let seeds = ["Isabel van Gelder - Heartless", "\"Heartless\" von Isabel van Gelder", "„A“ by B", "A — B"].map { Array($0.utf8) }
+    for _ in 0..<fuzzRounds / 4 {
+        let bytes = r.int(2) == 0 ? r.bytes(r.int(300)) : r.mutate(seeds[r.int(seeds.count)])
+        guard let t = MusicSearch.track(String(decoding: bytes, as: UTF8.self)) else { continue }
+        #expect(!t.artist.isEmpty && !t.title.isEmpty && t.query.count <= 150)
+        for s in MusicSearch.allCases {
+            let u = s.webURL(t, german: true)
+            #expect(u?.scheme == "https" && u?.query?.contains("&") != true && u?.fragment == nil)
+        }
+    }
+}
+
 @Test func fuzzHlsAndTs() {
     var r = Rng(x: 8)
     let playlists = [CheckCatalog.mediaHead + "#EXT-X-SERVER-CONTROL:CAN-SKIP-UNTIL=24\n#EXTINF:4,\na.ts\n#EXT-X-DISCONTINUITY\n#EXTINF:4,\nb.ts\n",

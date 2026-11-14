@@ -4,7 +4,7 @@ Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die 
 - Klicke auf das Fona-Symbol in der Menüleiste (Scheibe mit F).
 - Unter **Alle Sender** stehen alle Sender deiner Länder von A bis Z; ab zwei Buchstaben im Suchfeld nur noch die passenden. Ein Klick spielt ihn, der Stern legt ihn zu den **Favoriten**.
 - Der große Knopf oben hält an und spielt weiter.
-- Die Lupe oben neben Play sucht den laufenden Titel bei Spotify, Apple Music oder Amazon Music – in der App, wenn sie installiert ist, sonst auf der Website (Amazon Music immer auf der Website).
+- Die Lupe unten neben dem Buch sucht den laufenden Song bei Spotify, Apple Music, YouTube Music, Amazon Music, Deezer, TIDAL, Qobuz oder SoundCloud – Spotify in der App, wenn sie installiert ist, die anderen auf der Website. Gesucht wird nur, wenn der Sender Interpret und Titel nennt; sonst sagt Fona Bescheid.
 
 ## Favoriten und Zuletzt gehört
 - Favoriten sortierst du durch Ziehen. Rechtsklick auf einen Sender: aus den Favoriten nehmen, umbenennen oder entfernen. Den laufenden Sender kannst du auch mit Rechtsklick auf seinen Namen oben umbenennen.

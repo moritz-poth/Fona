@@ -299,6 +299,13 @@ public enum CheckCatalog {
             sanitized("text-nfc", "Cafe\u{301}", "Café"),
             sanitized("text-spaces", "  Nils   Frahm  –  Says  ", "Nils Frahm – Says"),
             sanitized("text-umlauts-kept", "Bühne – Café · 1LIVE", "Bühne – Café · 1LIVE"),
+            Check(id: "text-music-search", area: "text") {
+                // hostile stream title → only a percent-encoded query on the fixed service hosts
+                guard let t = MusicSearch.track("\"AC/DC?x=1&y#z\" von evil.com/@a\u{202E}") else { return "no track" }
+                let u = MusicSearch.deezer.webURL(t, german: true)?.absoluteString ?? ""
+                return u.hasPrefix("https://www.deezer.com/search/") && !u.contains("&") && !u.contains("#") && !u.contains("?")
+                    && MusicSearch.track("Nur der Sendername") == nil ? nil : u
+            },
             Check(id: "text-zalgo", area: "text") {
                 let out = Sanitize.display("Z" + String(repeating: "\u{0336}", count: 500) + "a")
                 return out.unicodeScalars.count <= 4 ? nil : "\(out.unicodeScalars.count) scalars"

@@ -100,13 +100,25 @@ func liveRadioBrowserSearch() async throws {
     #expect(AlphaMerge(countries: []).keys == [""])
 }
 
-@Test func musicSearchKeepsHostileTitlesInsideTheQuery() {
-    let evil = "AC/DC - Back?In&Black#x/../@evil.com\u{202E}"
-    for s in MusicSearch.allCases {
-        let web = s.webURL(evil, german: true)!
-        #expect(web.scheme == "https" && ["open.spotify.com", "music.apple.com", "music.amazon.de"].contains(web.host!))
-        #expect(!web.absoluteString.contains("evil.com/") && !web.absoluteString.contains("&Black") && !web.absoluteString.contains("#"))
+@Test func musicSearchReadsArtistAndTitle() {
+    let want = MusicSearch.Track(artist: "Isabel van Gelder", title: "Heartless")
+    #expect(MusicSearch.track("\"Heartless\" von Isabel van Gelder") == want)   // DLF Kultur style
+    #expect(MusicSearch.track("„Heartless“ by Isabel van Gelder") == want)
+    #expect(MusicSearch.track("Isabel van Gelder - Heartless") == want)
+    #expect(MusicSearch.track("Isabel van Gelder – Heartless")?.query == "Isabel van Gelder - Heartless")
+    #expect(MusicSearch.track("Jay-Z - 99 Problems")?.artist == "Jay-Z")              // hyphen without spaces stays
+    for none in ["", "radioeins", "Die Sendung mit Musik", " - ", "radioeins - Live", "x - https://evil.example"] {
+        #expect(MusicSearch.track(none, station: "radioeins") == nil, "\(none)")
     }
-    #expect(MusicSearch.spotify.appURL("Nils Frahm - Says")?.absoluteString == "spotify:search:Nils%20Frahm%20Says")
-    #expect(MusicSearch.appleMusic.appURL("   ") == nil && MusicSearch.amazonMusic.appURL("x") == nil)
+}
+
+@Test func musicSearchKeepsHostileTitlesInsideTheQuery() {
+    let t = MusicSearch.track("AC/DC - Back?In&Black#x/../@evil.com\u{202E}")!
+    for s in MusicSearch.allCases {
+        let web = s.webURL(t, german: true)!
+        #expect(web.scheme == "https" && web.host?.contains("evil") == false)
+        #expect(!web.absoluteString.contains("&Black") && !web.absoluteString.contains("#") && !web.absoluteString.contains("/../"))
+    }
+    #expect(MusicSearch.spotify.appURL(MusicSearch.track("Nils Frahm - Says")!)?.absoluteString == "spotify:search:Nils%20Frahm%20-%20Says")
+    #expect(MusicSearch.appleMusic.appURL(t) == nil)
 }

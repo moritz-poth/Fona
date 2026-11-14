@@ -3,6 +3,15 @@ import Foundation
 import FonaCore
 
 let args = CommandLine.arguments
+// fona-probe musicsearch "<stream title>" – the links the song search would open (scripts/test-music-search.sh)
+if args.count == 3, args[1] == "musicsearch" {
+    guard let t = MusicSearch.track(args[2]) else { print("NO-TRACK"); exit(1) }
+    print("QUERY\t\(t.query)")
+    for s in MusicSearch.allCases {
+        print([s.rawValue, s.appBundleID ?? "-", s.appURL(t)?.absoluteString ?? "-", s.webURL(t, german: true)?.absoluteString ?? "-"].joined(separator: "\t"))
+    }
+    exit(0)
+}
 guard args.count == 3, let cls = RequestClass(rawValue: args[1]) else {
     print("usage: fona-probe <stream|playlist|segment|directory|update|report> <url>"); exit(2)
 }

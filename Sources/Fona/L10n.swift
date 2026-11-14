@@ -11,7 +11,7 @@ enum L {
         case stationsSection, showCountries, addCountry, general, launchAtLogin, autoUpdate, language, languageSystem
         case support, selfTest, selfTestHint, runSelfTest, report, reportButton, showLog, likeFona, likeFonaHint, coffee
         case play, pause, settingsButton, favoriteAdd, favoriteRemove, rename, remove, quit, connecting, buffering, reconnecting
-        case libraryReset, selfTestPassed, selfTestFailed, stationCount, sortedByPopularity, sortedByName, findSong, done
+        case libraryReset, selfTestPassed, selfTestFailed, stationCount, sortedByPopularity, sortedByName, findSong, noTrackInfo, done
         case updates, version, checkNow, upToDate, updateCheckFailed, updateFailed, updateAvailable, install, skipUpdate, installManual, betas, betasHint
         case moveToApplications, manual, about, aboutCopyright, aboutLicense, aboutWarranty, sourceCode, license, showManual
         case on, off, newsOnAir, backTo, stationNotFavourite
@@ -100,6 +100,7 @@ enum L {
         case .stationCount: return ("%d Sender", "%d stations")
         case .sortedByPopularity: return ("sortiert nach Beliebtheit", "sorted by popularity")
         case .findSong: return ("Song bei Streamingdienst suchen", "Find song on a streaming service")
+        case .noTrackInfo: return ("Kein Interpret und Titel vom Sender – keine Suche.", "No artist and track from the station – no search.")
         case .sortedByName: return ("alle Sender von A bis Z", "all stations from A to Z")
         case .done: return ("Fertig", "Done")
         case .selfTestRunning: return ("Selbsttest läuft …", "Self-test running …")

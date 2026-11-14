@@ -15,7 +15,7 @@ struct PopoverView: View {
                 if let n = model.notice { NoticeCard(text: n) { model.notice = nil } }
                 if model.tab == .favorites { FavoritesList(model: model) } else { AllStations(model: model, settings: settings) }
                 UpdateBanner(updater: model.updater)  // sits on the footer line (user request 2026-11-13)
-                FooterBar(settings: settings)
+                FooterBar(model: model, settings: settings)
             }
             if model.addSheet { AddStationSheet(model: model).transition(.move(edge: .top)) }
             if let r = model.renaming { RenameSheet(model: model, station: r) }
@@ -44,7 +44,6 @@ struct Header: View {
                 }
             }
             Spacer(minLength: 0)
-            if !model.title.isEmpty { SongSearchMenu(title: model.title) }
             PlayButton(model: model)
         }
         .padding(16)
@@ -56,7 +55,8 @@ struct Header: View {
                 Button(L.t(.toNews)) { model.rejoinNews() }.buttonStyle(FieldButtonStyle()).fixedSize()
             }
             .foregroundStyle(Theme.text2)
-            .padding(.horizontal, 16).padding(.vertical, 8)
+            // 6 + 28 + 6: header + strip = 120 pt like NewsHeader, so the window no longer jumps (user 2026-11-14)
+            .padding(.horizontal, 16).padding(.vertical, 6)
             .background(Theme.soft)
         }
         }
@@ -70,7 +70,7 @@ struct NewsHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                StationLogo(initials: "DLF", size: 48, active: true, bars: model.player)
+                StationLogo(initials: "DLF", size: 48, active: true)  // letters only up here, bars only in the list (user 2026-11-14)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(L.language == .de ? "NACHRICHTEN" : "NEWS").font(.system(size: 10, weight: .bold)).tracking(0.4)
                         .foregroundStyle(Theme.bg).padding(.horizontal, 6).padding(.vertical, 2)
@@ -111,12 +111,14 @@ struct PlayButton: View {
 
 /// Settings, manual, quit as icons in a bar at the bottom (user's pick 2026-11-13, canvas variant C without text).
 struct FooterBar: View {
+    @ObservedObject var model: AppModel
     @ObservedObject var settings: AppSettings
     @Environment(\.openWindow) var openWindow
     var body: some View {
         HStack(spacing: 4) {
             icon("gearshape", L.t(.settingsButton)) { open("settings") }.keyboardShortcut(",")
             icon("book", L.t(.manual)) { open("manual") }
+            SongSearchMenu(model: model)  // next to the manual, not by Play (user 2026-11-14)
             Spacer()
             Volume(settings: settings).padding(.trailing, 10)  // left of quit (user 2026-11-13)
             icon("power", L.t(.quit)) { NSApp.terminate(nil) }
@@ -394,20 +396,24 @@ struct AllStations: View {
 
 /// Looks the current track up at a streaming service: its app when installed, else its website (user 2026-11-14).
 struct SongSearchMenu: View {
-    let title: String
+    @ObservedObject var model: AppModel
     var body: some View {
         Menu {
             ForEach(MusicSearch.allCases, id: \.self) { s in
                 Button(s.rawValue) { open(s) }
             }
         } label: {
-            Image(systemName: "magnifyingglass").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.text2)
+            Image(systemName: "magnifyingglass").font(.system(size: 14)).foregroundStyle(Theme.text2)
                 .frame(width: 28, height: 28).contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
         .help(L.t(.findSong)).accessibilityLabel(L.t(.findSong))
     }
     func open(_ s: MusicSearch) {
+        // only with artist and track from the metadata; otherwise our own notice, no search (user 2026-11-14)
+        guard model.isPlaying, let title = MusicSearch.track(model.title, station: model.current?.displayName) else {
+            model.showToast(L.t(.noTrackInfo)); return
+        }
         let installed = s.appBundleID.map { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) != nil } ?? false
         if installed, let u = s.appURL(title) { NSWorkspace.shared.open(u) }
         else if let u = s.webURL(title, german: L.language == .de) { NSWorkspace.shared.open(u) }

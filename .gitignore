@@ -5,3 +5,4 @@ dist/
 spikes/*/out/
 spikes/p0g/test.adts
 .omc/
+spikes/newslearn/__pycache__/

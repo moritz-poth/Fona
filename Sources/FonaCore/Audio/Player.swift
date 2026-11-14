@@ -130,9 +130,17 @@ public final class Player: @unchecked Sendable {
         }
         engine.attach(node)
         engine.connect(node, to: engine.mainMixerNode, format: fmt)
+        // macOS stops the engine when the output device changes; without a restart the ring fills and
+        // the stream hangs in "buffering" forever.
+        configObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
+            guard let self, !self.engine.isRunning else { return }
+            try? self.engine.start()
+        }
     }
+    var configObserver: NSObjectProtocol?
 
-    deinit { target.deallocate(); position.deallocate(); underruns.deallocate(); playing.deallocate(); level.deallocate(); rise.deallocate() }
+    deinit { configObserver.map(NotificationCenter.default.removeObserver); target.deallocate(); position.deallocate(); underruns.deallocate(); playing.deallocate(); level.deallocate(); rise.deallocate() }
 
     public var underrunCount: Int { underruns.pointee }
     /// Loudness of what is playing right now (RMS, 0…1, before the volume slider) – drives the level bars.

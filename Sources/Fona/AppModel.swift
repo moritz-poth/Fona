@@ -89,6 +89,9 @@ final class AppModel: ObservableObject {
 
     @Published var query = "" { didSet { scheduleSearch() } }
     @Published var results: [RadioBrowser.Result] = []
+    @Published var browse = AlphaMerge(countries: [])
+    @Published var browseFailed = false
+    var browseTask: Task<Void, Never>?
     @Published var searching = false
     @Published var searchError: String?
     var searchTask: Task<Void, Never>?
@@ -218,7 +221,7 @@ final class AppModel: ObservableObject {
     func scheduleSearch() {
         searchTask?.cancel()
         let q = query
-        guard q.trimmingCharacters(in: .whitespaces).count >= 2 else { results = []; searchError = nil; searching = false; return }
+        guard q.trimmingCharacters(in: .whitespaces).count >= 2 else { results = []; searchError = nil; searching = false; browseMore(); return }
         let countries = settings.countries
         searchTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 300_000_000)
@@ -233,6 +236,33 @@ final class AppModel: ObservableObject {
                 self.results = []; self.searchError = L.t(.noDirectory)
             }
             self.searching = false
+        }
+    }
+
+    /// Next A–Z page of the directory; starts over when the countries changed. Called as the list scrolls to its end.
+    func browseMore() {
+        let keys = AlphaMerge(countries: settings.countries).keys
+        if browse.keys != keys { browseTask?.cancel(); browseTask = nil; browse = AlphaMerge(countries: settings.countries); browseFailed = false }
+        guard browseTask == nil, !browse.finished else { return }
+        let want = browse.hungry.map { ($0, browse.offset[$0] ?? 0) }
+        browseTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let pages = try await withThrowingTaskGroup(of: (String, [RadioBrowser.Result], Bool).self) { group in
+                    for (k, off) in want { group.addTask { let p = try await self.directory.browse(country: k.isEmpty ? nil : k, offset: off); return (k, p.stations, p.more) } }
+                    return try await group.reduce(into: []) { $0.append($1) }
+                }
+                guard !Task.isCancelled, self.browse.keys == keys else { return }
+                let before = self.browse.shown.count
+                for (k, st, more) in pages { self.browse.add(k, st, more: more) }
+                self.browseFailed = false
+                // the spinner row stays on screen (no new onAppear) when a page added little: fetch on by ourselves
+                if self.browse.shown.count - before < 50 { self.browseTask = nil; self.browseMore(); return }
+            } catch {
+                guard !Task.isCancelled else { return }
+                self.browseFailed = true
+            }
+            self.browseTask = nil
         }
     }
 

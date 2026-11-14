@@ -2,17 +2,17 @@ Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die 
 
 ## Erste Schritte
 - Klicke auf das Fona-Symbol in der Menüleiste (Scheibe mit F).
-- Unter **Alle Sender** suchst du einen Sender (ab zwei Buchstaben). Ein Klick spielt ihn, der Stern legt ihn zu den **Favoriten**.
+- Unter **Alle Sender** stehen alle Sender deiner Länder von A bis Z; ab zwei Buchstaben im Suchfeld nur noch die passenden. Ein Klick spielt ihn, der Stern legt ihn zu den **Favoriten**.
 - Der große Knopf oben hält an und spielt weiter.
 
 ## Favoriten und Zuletzt gehört
 - Favoriten sortierst du durch Ziehen. Rechtsklick auf einen Sender: aus den Favoriten nehmen, umbenennen oder entfernen. Den laufenden Sender kannst du auch mit Rechtsklick auf seinen Namen oben umbenennen.
 - Lautstärke: der schmale Balken unten rechts, links neben dem Ein/Aus-Knopf. Klicken oder ziehen, mit dem Mausrad drehen, wenn der Zeiger darüber steht, oder die Pfeiltasten. Klick auf den kleinen Lautsprecher schaltet stumm.
 - Play/Pause: Auch die Play/Pause-Taste der Tastatur, die Taste am Kopfhörer und das Kontrollzentrum starten und stoppen Fona (solange Fona zuletzt gespielt hat).
-- **Zuletzt gehört** zeigt die letzten zehn Sender, die keine Favoriten sind. Der Stern daneben macht sie zum Favoriten.
+- **Zuletzt gehört** zeigt die letzten zehn Sender, die keine Favoriten sind. Der Stern in der Zeile macht sie zum Favoriten.
 
 ## Alle Sender
-- Die Liste kommt aus dem freien Verzeichnis radio-browser.info.
+- Die Liste kommt aus dem freien Verzeichnis radio-browser.info. Ohne Suche zeigt sie alle Sender von A bis Z und lädt beim Scrollen weiter, mit Suche die Treffer nach Beliebtheit.
 - Über das Länder-Menü wählst du, aus welchen Ländern Sender angezeigt werden – oder **Weltweit**.
 - Senderlogos zeigt Fona bewusst nicht: Bilder aus dem Netz sind ein Einfallstor. Stattdessen stehen die Anfangsbuchstaben da.
 

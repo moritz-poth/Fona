@@ -86,3 +86,16 @@ func liveRadioBrowserSearch() async throws {
     let c = try await rb.countries()
     #expect(c.contains { $0.code == "DE" })
 }
+
+@Test func alphaMergeShowsNothingOutOfOrder() {
+    func r(_ n: String) -> RadioBrowser.Result { .init(stationuuid: n, name: n, url: "https://x/\(n)", countryCode: nil, tags: "", bitrate: 0, codec: "", clickcount: 0) }
+    var m = AlphaMerge(countries: ["DE", "AT"])
+    m.add("DE", [r("Alpha"), r("Delta")], more: true)
+    #expect(m.shown.isEmpty)                         // AT has not answered yet
+    m.add("AT", [r("bravo"), r("Zulu")], more: false)
+    #expect(m.shown.map(\.name) == ["Alpha", "bravo", "Delta"])  // Zulu waits for DE's next page
+    #expect(m.hungry == ["DE"] && m.offset["DE"] == RadioBrowser.browsePage)
+    m.add("DE", [r("Echo")], more: false)
+    #expect(m.shown.map(\.name) == ["Alpha", "bravo", "Delta", "Echo", "Zulu"] && m.finished)
+    #expect(AlphaMerge(countries: []).keys == [""])
+}

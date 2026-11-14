@@ -193,7 +193,7 @@ struct SegmentPicker: View {
 struct StationRow: View {
     @ObservedObject var model: AppModel
     let station: Station
-    var trailing: String?
+    var star = false  // "recently played": add-to-favourites star left of the bars (user 2026-11-14, replaces the time)
     @State private var hovering = false
     @State private var menuOpen = false
     var body: some View {
@@ -205,10 +205,13 @@ struct StationRow: View {
             StationLogo(initials: station.initials, active: isCurrent)
             Text(verbatim: station.displayName).fontWeight(isCurrent ? .semibold : .regular).lineLimit(1).truncationMode(.middle)
             Spacer(minLength: 4)
+            if star {
+                Button { model.toggleFavorite(station) } label: { Image(systemName: "star").foregroundStyle(Theme.text2) }
+                    .buttonStyle(.plain).frame(width: 24, height: 24)
+                    .accessibilityLabel("\(station.displayName) – \(L.t(.favoriteAdd))")
+            }
             if bars {
                 LevelBars(player: model.player).accessibilityHidden(true)
-            } else if let trailing {
-                Text(verbatim: trailing).font(.system(size: 11)).foregroundStyle(Theme.text2)
             }
             Menu { menuItems } label: {
                 Image(systemName: "ellipsis").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.text2)
@@ -231,7 +234,7 @@ struct StationRow: View {
         // our own right-click outline (the system List drew a blue one): the row under the pointer when a menu opens
         .onReceive(NotificationCenter.default.publisher(for: NSMenu.didBeginTrackingNotification)) { _ in if hovering { menuOpen = true } }
         .onReceive(NotificationCenter.default.publisher(for: NSMenu.didEndTrackingNotification)) { _ in menuOpen = false }
-        .accessibilityLabel([station.displayName, isCurrent ? L.t(.playing) : nil, trailing].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityLabel([station.displayName, isCurrent ? L.t(.playing) : nil].compactMap { $0 }.joined(separator: ", "))
         .accessibilityActions {
             Button(model.library.isFavorite(station.id) ? L.t(.favoriteRemove) : L.t(.favoriteAdd)) { model.toggleFavorite(station) }
             Button(L.t(.rename)) { model.renaming = station }
@@ -267,28 +270,12 @@ struct FavoritesList: View {
                     Text(L.t(.recentlyPlayed)).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.text2)
                         .padding(.top, 16).padding(.bottom, 4).padding(.horizontal, 14).accessibilityAddTraits(.isHeader)
                     ForEach(recent) { s in
-                        HStack(spacing: 0) {
-                            StationRow(model: model, station: s, trailing: relative(s))
-                            Button { model.toggleFavorite(s) } label: { Image(systemName: "star").foregroundStyle(Theme.text2) }
-                                .buttonStyle(.plain).frame(width: 24, height: 24)
-                                .accessibilityLabel("\(s.displayName) – \(L.t(.favoriteAdd))")
-                        }
-                        .padding(.leading, 6).padding(.trailing, 10)
+                        StationRow(model: model, station: s, star: true).padding(.horizontal, 6)
                     }
                 }
             }
             .padding(.vertical, 6)
         }
-    }
-
-    func relative(_ s: Station) -> String {
-        guard let d = model.library.history.first(where: { $0.id == s.id })?.playedAt else { return "" }
-        let f = RelativeDateTimeFormatter()
-        f.locale = Locale(identifier: L.language.rawValue)
-        f.unitsStyle = .short
-        f.dateTimeStyle = .named
-        let now = Date()
-        return now.timeIntervalSince(d) < 60 ? f.localizedString(fromTimeInterval: 0) : f.localizedString(for: min(d, now), relativeTo: now)
     }
 }
 
@@ -306,12 +293,13 @@ struct FavoriteDrop: DropDelegate {
     func performDrop(info: DropInfo) -> Bool { dragging = nil; return true }
 }
 
-/// One line that scrolls back and forth when it does not fit (user 2026-11-13: titles were cut off).
+/// One line that, when it does not fit, runs all the way out to the left, reappears at its start, pauses, runs again
+/// (user 2026-11-14; before it bounced back and forth).
 struct Marquee: View {
     let text: String
     @State private var boxWidth: CGFloat = 0
     @State private var textWidth: CGFloat = 0
-    @State private var scrolled = false
+    @State private var shift: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         let overflow = textWidth - boxWidth
@@ -326,9 +314,16 @@ struct Marquee: View {
             .overlay(alignment: .leading) {
                 if moving {
                     Text(verbatim: text).fixedSize()
-                        .offset(x: scrolled ? -overflow : 0)
-                        .animation(.linear(duration: Double(overflow) / 30).delay(2).repeatForever(autoreverses: true), value: scrolled)
-                        .onAppear { scrolled = true }
+                        .offset(x: shift)
+                        .task(id: textWidth) {
+                            let run = Double(textWidth) / 30  // 30 pt/s
+                            while !Task.isCancelled {
+                                shift = 0
+                                try? await Task.sleep(for: .seconds(2))
+                                withAnimation(.linear(duration: run)) { shift = -textWidth }
+                                try? await Task.sleep(for: .seconds(run))
+                            }
+                        }
                 }
             }
             .clipped()
@@ -365,7 +360,25 @@ struct AllStations: View {
             Group {
                 if model.searching { ProgressView().controlSize(.small).padding() }
                 else if let e = model.searchError { Text(verbatim: e).foregroundStyle(Theme.text2).padding() }
-                else if model.query.trimmingCharacters(in: .whitespaces).count < 2 { Text(L.t(.searchHint)).foregroundStyle(Theme.text2).padding() }
+                else if model.query.trimmingCharacters(in: .whitespaces).count < 2 {
+                    // no search: the whole directory for the chosen countries, A–Z, a page more as the end comes into view
+                    if model.browse.shown.isEmpty && model.browseFailed { Text(L.t(.noDirectory)).foregroundStyle(Theme.text2).padding() }
+                    else if model.browse.shown.isEmpty && !model.browse.finished { ProgressView().controlSize(.small).padding() }
+                    else if model.browse.shown.isEmpty { Text(L.t(.noResults)).foregroundStyle(Theme.text2).padding() }
+                    else {
+                        Text(L.t(.sortedByName)).font(.system(size: 11)).foregroundStyle(Theme.text2)
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 20)
+                        List {
+                            ForEach(model.browse.shown) { r in ResultRow(model: model, result: r).listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 6, bottom: 0, trailing: 10)) }
+                            if !model.browse.finished {
+                                ProgressView().controlSize(.small).frame(maxWidth: .infinity).listRowSeparator(.hidden)
+                                    .onAppear { model.browseMore() }
+                            }
+                        }
+                        .listStyle(.plain).scrollContentBackground(.hidden)
+                    }
+                }
                 else if model.results.isEmpty { Text(L.t(.noResults)).foregroundStyle(Theme.text2).padding() }
                 else {
                     Text(verbatim: L.f(.stationCount, model.results.count) + " · " + L.t(.sortedByPopularity))
@@ -377,6 +390,7 @@ struct AllStations: View {
             }
             Spacer(minLength: 0)
         }
+        .onAppear { model.browseMore() }
     }
 }
 

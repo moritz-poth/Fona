@@ -93,14 +93,27 @@ public final class RadioBrowser: @unchecked Sendable {
         return all.sorted { $0.clickcount > $1.clickcount }.filter { seen.insert($0.url).inserted }.prefix(Self.maxResults).map { $0 }
     }
 
+    public static let browsePage = 200
+
+    /// One page of every station (one country, or worldwide for nil) A–Z; `more` is false on the last page.
+    public func browse(country: String?, offset: Int) async throws -> (stations: [Result], more: Bool) {
+        var path = "/json/stations/search?hidebroken=true&order=name&limit=\(Self.browsePage)&offset=\(max(0, offset))"
+        if let c = country, c.count == 2, c.allSatisfy({ $0.isASCII && $0.isUppercase }) { path += "&countrycode=\(c)" }
+        let page = Self.parsePage(try await get(path))
+        return (page.stations, page.raw >= Self.browsePage)
+    }
+
     public func countries() async throws -> [Country] {
         Self.parseCountries(try await get("/json/countries"))
     }
 
     /// S6: every entry checked; invalid ones disappear.
-    public static func parseStations(_ data: Data) -> [Result] {
-        guard let raw = try? JSONDecoder().decode([RawStation].self, from: data) else { return [] }
-        return raw.prefix(1000).compactMap { r in
+    public static func parseStations(_ data: Data) -> [Result] { parsePage(data).stations }
+
+    /// `raw`: entries the server sent, before invalid ones are dropped (tells paging whether more follow).
+    static func parsePage(_ data: Data) -> (stations: [Result], raw: Int) {
+        guard let raw = try? JSONDecoder().decode([RawStation].self, from: data) else { return ([], 0) }
+        return (raw.prefix(1000).compactMap { r in
             guard let uuid = r.stationuuid, uuid.count <= 64, uuid.allSatisfy({ $0.isHexDigit || $0 == "-" }),
                   let rawName = r.name else { return nil }
             let name = String(Sanitize.display(rawName).prefix(120))
@@ -113,7 +126,7 @@ public final class RadioBrowser: @unchecked Sendable {
                           tags: String(Sanitize.display(r.tags ?? "").prefix(80)),
                           bitrate: min(max(r.bitrate ?? 0, 0), 9999), codec: String(codec.prefix(12)),
                           clickcount: max(r.clickcount ?? 0, 0))
-        }
+        }, raw.count)
     }
 
     public static func parseCountries(_ data: Data) -> [Country] {

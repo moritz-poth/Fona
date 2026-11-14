@@ -2,17 +2,17 @@ Fona plays internet radio from the menu bar. When the news starts on Deutschland
 
 ## Getting started
 - Click the Fona icon in the menu bar (a disc with an F).
-- Under **All Stations** you search for a station (from two letters on). A click plays it, the star adds it to your **Favourites**.
+- **All Stations** lists every station of your countries from A to Z; type two letters or more to see only the matches. A click plays it, the star adds it to your **Favourites**.
 - The big button at the top pauses and resumes.
 
 ## Favourites and Recently Played
 - Drag favourites to sort them. Right-click a station to remove it from the favourites, rename it or remove it. You can also rename the playing station by right-clicking its name at the top.
 - Volume: the slim bar at the bottom right, left of the power button. Click or drag, turn the mouse wheel with the pointer over it, or use the arrow keys. Clicking the small speaker mutes.
 - Play/Pause: the play/pause key on the keyboard, the button on headphones and Control Center start and stop Fona as well (while Fona was the last app playing).
-- **Recently Played** shows the last ten stations that are not favourites. The star next to one makes it a favourite.
+- **Recently Played** shows the last ten stations that are not favourites. The star in its row makes it a favourite.
 
 ## All Stations
-- The list comes from the free directory radio-browser.info.
+- The list comes from the free directory radio-browser.info. Without a search it shows every station from A to Z and loads more as you scroll; a search shows the matches by popularity.
 - The country menu chooses which countries are shown – or **Worldwide**.
 - Fona deliberately shows no station logos: pictures from the internet are a way in for attackers. You see the initials instead.
 

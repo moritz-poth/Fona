@@ -6,12 +6,12 @@ enum L {
     enum Key: CaseIterable {
         case favorites, allStations, recentlyPlayed, newsSwitch, newsNext, newsNow, newsBackTo, backNow, newsStillOn, toNews, interrupted, playing
         case searchPlaceholder, countries, worldwide, addStation, addTitle, streamLink, name, nameHint, addToFavorites
-        case cancel, add, checking, linkOK, noFavorites, noResults, noDirectory, searchHint
+        case cancel, add, checking, linkOK, noFavorites, noResults, noDirectory
         case settings, newsSection, newsStation, scheduleLabel, scheduleHint, hourly, hourlyAndHalf, maxDuration, minutes
         case stationsSection, showCountries, addCountry, general, launchAtLogin, autoUpdate, language, languageSystem
         case support, selfTest, selfTestHint, runSelfTest, report, reportButton, showLog, likeFona, likeFonaHint, coffee
         case play, pause, settingsButton, favoriteAdd, favoriteRemove, rename, remove, quit, connecting, buffering, reconnecting
-        case libraryReset, selfTestPassed, selfTestFailed, stationCount, sortedByPopularity, done
+        case libraryReset, selfTestPassed, selfTestFailed, stationCount, sortedByPopularity, sortedByName, done
         case updates, version, checkNow, upToDate, updateCheckFailed, updateFailed, updateAvailable, install, skipUpdate, installManual, betas, betasHint
         case moveToApplications, manual, about, aboutCopyright, aboutLicense, aboutWarranty, sourceCode, license, showManual
         case on, off, newsOnAir, backTo, stationNotFavourite
@@ -56,7 +56,6 @@ enum L {
         case .noFavorites: return ("Füge Sender über „Alle Sender“ hinzu.", "Add stations from “All Stations”.")
         case .noResults: return ("Keine Sender gefunden.", "No stations found.")
         case .noDirectory: return ("Keine Verbindung zum Senderverzeichnis.", "No connection to the station directory.")
-        case .searchHint: return ("Mindestens 2 Zeichen eingeben.", "Type at least 2 characters.")
         case .settings: return ("Einstellungen", "Settings")
         case .newsSection: return ("Nachrichten", "News")
         case .newsStation: return ("Nachrichtensender", "News station")
@@ -100,6 +99,7 @@ enum L {
         case .selfTestFailed: return ("Selbsttest: %d von %d Prüfungen fehlgeschlagen.", "Self-test: %d of %d checks failed.")
         case .stationCount: return ("%d Sender", "%d stations")
         case .sortedByPopularity: return ("sortiert nach Beliebtheit", "sorted by popularity")
+        case .sortedByName: return ("alle Sender von A bis Z", "all stations from A to Z")
         case .done: return ("Fertig", "Done")
         case .selfTestRunning: return ("Selbsttest läuft …", "Self-test running …")
         case .reportSent: return ("Bericht gesendet. Danke!", "Report sent. Thank you!")

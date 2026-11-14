@@ -44,6 +44,11 @@ enum Snapshot {
             render(PopoverView(model: model, settings: model.settings), "2b-news-skipped\(suffix)", out, dark, CGSize(width: 360, height: 600))
             model.newsSkipped = false; model.tab = .all
             render(PopoverView(model: model, settings: model.settings), "3-all\(suffix)", out, dark, CGSize(width: 360, height: 600))
+            var all = AlphaMerge(countries: model.settings.countries)
+            for k in all.keys { all.add(k, k == all.keys[0] ? model.results.sorted { $0.name < $1.name } : [], more: false) }
+            model.browse = all; model.query = ""
+            render(PopoverView(model: model, settings: model.settings), "3b-browse\(suffix)", out, dark, CGSize(width: 360, height: 600))
+            model.query = "jazz"; model.searchTask?.cancel(); model.searching = false
             model.addSheet = true
             render(PopoverView(model: model, settings: model.settings), "4-add\(suffix)", out, dark, CGSize(width: 360, height: 600))
             model.addSheet = false

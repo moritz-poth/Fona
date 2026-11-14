@@ -102,11 +102,11 @@ def marks_in(n0, n1, starts_sorted, half):
     return np.array(out)
 
 
-def learn_start(fp, starts, train, pre=60, post=90, window_s=90):
+def learn_start(fp, starts, train, pre=120, post=150, window_s=90):
     """Picks the stretch of sound around :00 that repeats in most training hours and occurs nowhere else.
     Returns dict(template, offset_s (template start relative to :00), threshold, margin)."""
     W = [fp[starts[h] - int(pre * FPS): starts[h] + int(post * FPS)] for h in train]
-    cov = coverage(W, 20)
+    cov = coverage_fast(W, 90)  # private stations start late and vary (Antenne: +52…+72 s)
     ref = int(np.argmax((cov >= 0.5).sum(axis=1)))
     regs = regions(cov[ref] >= 0.5, int(1.5 * FPS))
     if not regs:
@@ -182,3 +182,23 @@ def coverage_fast(windows, max_lag_s, thr=0.30, smooth_s=1.0):
                 best[lo:hi] |= e < thr
             hits[i] += best
     return hits / (len(windows) - 1)
+
+
+def learn_end(fp, news0, a0=60, a1=900, share=0.6):
+    """The latest sound that comes back in most bulletins 1–15 min after the start = back to the programme.
+    news0: frame positions of detected starts. Returns dict(template, threshold, at_s) or None."""
+    W = [fp[s + int(a0 * FPS): s + int(a1 * FPS)] for s in news0 if s + int(a1 * FPS) < len(fp)][:12]
+    if len(W) < 3:
+        return None
+    cov = coverage_fast(W, 180)
+    ref = int(np.argmax((cov >= share).sum(axis=1)))
+    regs = regions(cov[ref] >= share, int(1.5 * FPS))
+    if not regs:
+        return None
+    a, b = regs[-1]
+    T = min(b - a, int(3 * FPS))
+    tpl = W[ref][b - T:b]  # the very end of the last repeated sound
+    # threshold from the bulletins themselves: best score inside each window, worst of the good ones
+    sc = [scan(w, tpl).min() for w in W]
+    return dict(template=tpl, at_s=(b / FPS + a0), threshold=float(min(0.45, sorted(sc)[len(sc) * 2 // 3] + 0.1)),
+                scores=[round(float(x), 2) for x in sc])

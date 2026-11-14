@@ -4,7 +4,7 @@ import FonaCore
 /// German and English UI texts. Every key needs both languages – the switch makes a missing one a compile error.
 enum L {
     enum Key: CaseIterable {
-        case favorites, allStations, recentlyPlayed, newsSwitch, newsNext, newsNow, newsBackTo, backNow, interrupted, playing
+        case favorites, allStations, recentlyPlayed, newsSwitch, newsNext, newsNow, newsBackTo, backNow, newsStillOn, toNews, interrupted, playing
         case searchPlaceholder, countries, worldwide, addStation, addTitle, streamLink, name, nameHint, addToFavorites
         case cancel, add, checking, linkOK, noFavorites, noResults, noDirectory, searchHint
         case settings, newsSection, newsStation, scheduleLabel, scheduleHint, hourly, hourlyAndHalf, maxDuration, minutes
@@ -36,6 +36,8 @@ enum L {
         case .newsNow: return ("Läuft gerade", "On air now")
         case .newsBackTo: return ("Danach zurück zu %@", "Then back to %@")
         case .backNow: return ("Jetzt zurück", "Back Now")
+        case .newsStillOn: return ("Nachrichten laufen", "News still on")
+        case .toNews: return ("Zu den Nachrichten", "To the News")
         case .interrupted: return ("unterbrochen", "interrupted")
         case .playing: return ("läuft", "playing")
         case .searchPlaceholder: return ("Sender suchen", "Search stations")

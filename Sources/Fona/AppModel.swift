@@ -84,6 +84,7 @@ final class AppModel: ObservableObject {
     @Published var state: StationPlayer.State = .stopped { didSet { if !Snapshot.requested { NowPlaying.update(self) } } }
     @Published var title = "" { didSet { if !Snapshot.requested { NowPlaying.update(self) } } }
     @Published var newsActive = false
+    @Published var newsSkipped = false
     var settingsObserver: AnyCancellable?
 
     @Published var query = "" { didSet { scheduleSearch() } }
@@ -109,6 +110,7 @@ final class AppModel: ObservableObject {
             self?.newsActive = on
             announce(on ? L.t(.newsOnAir) : L.f(.backTo, self?.current?.displayName ?? "Fona"))
         }
+        news.onSkipped = { [weak self] on in self?.newsSkipped = on }
         news.log = { log.notice("\($0, privacy: .public)"); FileLog.shared.write($0) }
         FileLog.shared.write("start Fona \(version) (\(build))")
         if AppUpdater.translocated { notice = L.t(.moveToApplications) }
@@ -371,6 +373,7 @@ final class AppModel: ObservableObject {
     }
 
     func backFromNews() { news.backNow() }
+    func rejoinNews() { news.rejoin() }
 
     var nextNewsTime: String {
         let cal = Calendar.current

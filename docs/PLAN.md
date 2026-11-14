@@ -225,6 +225,9 @@ titleRule: ^Nachrichten\b (ohne Groß/Klein) · scheduleWindow: ±90 s um :00 (u
 | `nachrichten` | Nutzer wählt anderen Sender | neuen Sender starten, nach Nachrichtenende auf ihn | `nachrichten` |
 | `nachrichten` | Nutzer wählt Deutschlandfunk | Nachrichten werden Programm | `aus` |
 | `nachrichten` | Nachrichtenstream fällt aus | sofort zurück | `sperre` |
+| `nachrichten` | „Jetzt zurück“ | Überblenden zurück, Hinweis „Nachrichten laufen“ bleibt (Nutzer 2026-11-14) | `weggeklickt` |
+| `weggeklickt` | „Zu den Nachrichten“ | live überblenden | `nachrichten` |
+| `weggeklickt` | Ende-Signal (6.3) oder Nachrichtenstream fällt aus | Hinweis weg | `sperre` |
 | `nachrichten` | Programmstream fällt aus | Nachrichten zu Ende spielen, dann Wiederverbinden (§5) | `nachrichten` |
 | `sperre` | 10 min vergangen | – | `bereit` |
 | beliebig | Umschaltung aus | ggf. zurück, Kette stoppen | `aus` |

@@ -94,7 +94,13 @@ func logic(enabled: Bool = true, playing: Bool = true) -> (NewsLogic, Clock) {
     var (l, c) = logic()
     _ = l.handle(.tone(secondsAgo: 2), now: c.at(12, 0, 2))
     #expect(l.handle(.backNow, now: c.at(12, 1)) == [.fadeToProgram])
+    #expect(l.state == .skipped(since: c.at(12, 0, 2), titleSeen: false))  // bulletin still runs: banner stays
+    #expect(l.handle(.rejoin, now: c.at(12, 2)) == [.fadeToNews(replaySeconds: 0)])
+    #expect(l.handle(.backNow, now: c.at(12, 3)) == [.fadeToProgram])
+    #expect(l.handle(.title("Nachrichten"), now: c.at(12, 3, 10)) == [])
+    #expect(l.handle(.title("Informationen am Mittag"), now: c.at(12, 5)) == [])  // ends silently
     if case .cooldown = l.state {} else { Issue.record("expected cooldown") }
+    #expect(l.handle(.rejoin, now: c.at(12, 6)) == [])
 
     (l, _) = logic()
     _ = l.handle(.tone(secondsAgo: 2), now: c.at(12, 0, 2))

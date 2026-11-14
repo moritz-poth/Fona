@@ -68,6 +68,9 @@ public final class NewsWatcher {
     var timer: Timer?
     public private(set) var active = false
     public var onActive: ((Bool) -> Void)?
+    /// The bulletin still runs after „Back now“ (banner with „To the news“).
+    public private(set) var skipped = false
+    public var onSkipped: ((Bool) -> Void)?
     public var log: ((String) -> Void)?
 
     public init(player: Player, makeDecoder: @escaping @Sendable () -> FrameDecoder) {
@@ -101,6 +104,7 @@ public final class NewsWatcher {
         handle(.program(playing: playing, isNewsStation: url.map(Self.isNewsStation) ?? false))
     }
     public func backNow() { handle(.backNow) }
+    public func rejoin() { handle(.rejoin) }
 
     func handle(_ e: NewsLogic.Event) {
         let actions = logic.handle(e, now: Date())
@@ -127,6 +131,7 @@ public final class NewsWatcher {
                 }
             }
         }
+        if logic.state.isSkipped != skipped { skipped.toggle(); onSkipped?(skipped) }
     }
 
     func setActive(_ on: Bool) {

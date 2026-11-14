@@ -47,6 +47,17 @@ struct Header: View {
             PlayButton(model: model)
         }
         .padding(16)
+        if model.newsSkipped {
+            HStack(spacing: 8) {
+                Image(systemName: "newspaper").font(.system(size: 11, weight: .semibold)).accessibilityHidden(true)
+                Text(L.t(.newsStillOn)).font(.system(size: 12)).lineLimit(1)
+                Spacer()
+                Button(L.t(.toNews)) { model.rejoinNews() }.buttonStyle(FieldButtonStyle()).fixedSize()
+            }
+            .foregroundStyle(Theme.text2)
+            .padding(.horizontal, 16).padding(.vertical, 8)
+            .background(Theme.soft)
+        }
         }
         .background(Theme.surface)
         .overlay(alignment: .bottom) { Theme.border.frame(height: 1) }
@@ -63,7 +74,10 @@ struct NewsHeader: View {
                     Text(L.language == .de ? "NACHRICHTEN" : "NEWS").font(.system(size: 10, weight: .bold)).tracking(0.4)
                         .foregroundStyle(Theme.bg).padding(.horizontal, 6).padding(.vertical, 2)
                         .background(RoundedRectangle(cornerRadius: 4).fill(Theme.text))
-                    Text(verbatim: "Deutschlandfunk").font(.system(size: 14, weight: .semibold))
+                    HStack(spacing: 8) {
+                        Text(verbatim: "Deutschlandfunk").font(.system(size: 14, weight: .semibold))
+                        LevelBars(player: model.player).accessibilityHidden(true)
+                    }
                 }
                 Spacer(minLength: 0)
                 PlayButton(model: model)
@@ -140,7 +154,7 @@ struct NewsRow: View {
             Image(systemName: "newspaper").font(.system(size: 16)).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(L.t(.newsSwitch)).fontWeight(.semibold)
-                Text(verbatim: model.newsActive ? L.t(.newsNow) : L.f(.newsNext, model.nextNewsTime))
+                Text(verbatim: model.newsActive || model.newsSkipped ? L.t(.newsNow) : L.f(.newsNext, model.nextNewsTime))
                     .font(.system(size: 12)).foregroundStyle(Theme.text2)
             }
             Spacer()
@@ -184,23 +198,33 @@ struct StationRow: View {
     @State private var menuOpen = false
     var body: some View {
         let isCurrent = model.current?.url == station.url && model.isPlaying
-        Button { model.play(station) } label: {
-            HStack(spacing: 10) {
-                StationLogo(initials: station.initials, active: isCurrent)
-                Text(verbatim: station.displayName).fontWeight(isCurrent ? .semibold : .regular).lineLimit(1).truncationMode(.middle)
-                Spacer(minLength: 4)
-                if isCurrent {
-                    LevelBars(player: model.player).accessibilityHidden(true)
-                } else if let trailing {
-                    Text(verbatim: trailing).font(.system(size: 11)).foregroundStyle(Theme.text2)
-                }
+        // during the news the bars sit on the station that is heard (user 2026-11-14)
+        let bars = model.newsActive ? model.isPlaying && NewsWatcher.isNewsStation(station.url) : isCurrent
+        HStack(spacing: 10) {
+            StationLogo(initials: station.initials, active: isCurrent)
+            Text(verbatim: station.displayName).fontWeight(isCurrent ? .semibold : .regular).lineLimit(1).truncationMode(.middle)
+            Spacer(minLength: 4)
+            if bars {
+                LevelBars(player: model.player).accessibilityHidden(true)
+            } else if let trailing {
+                Text(verbatim: trailing).font(.system(size: 11)).foregroundStyle(Theme.text2)
             }
-            .padding(.horizontal, 8).frame(height: 40)
-            .background(RoundedRectangle(cornerRadius: 7).fill(isCurrent ? Theme.soft : .clear))
-            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Theme.switchOn, lineWidth: 1.5).opacity(menuOpen ? 1 : 0))
-            .contentShape(Rectangle())
+            Menu { menuItems } label: {
+                Image(systemName: "ellipsis").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.text2)
+            }
+            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+            .opacity(hovering || menuOpen ? 1 : 0)
+            .accessibilityHidden(true)  // same entries as the accessibility actions below
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 8).frame(height: 40)
+        .background(RoundedRectangle(cornerRadius: 7).fill(isCurrent ? Theme.soft : .clear))
+        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Theme.switchOn, lineWidth: 1.5).opacity(menuOpen ? 1 : 0))
+        .contentShape(Rectangle())
+        // a tap gesture, not a Button: the Button kept the mouse and favourites could not be dragged (user 2026-11-14)
+        .onTapGesture { model.play(station) }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { model.play(station) }
         .onHover { hovering = $0 }
         // our own right-click outline (the system List drew a blue one): the row under the pointer when a menu opens
         .onReceive(NotificationCenter.default.publisher(for: NSMenu.didBeginTrackingNotification)) { _ in if hovering { menuOpen = true } }
@@ -211,11 +235,13 @@ struct StationRow: View {
             Button(L.t(.rename)) { model.renaming = station }
             Button(L.t(.remove)) { model.remove(station) }
         }
-        .contextMenu {
-            Button(model.library.isFavorite(station.id) ? L.t(.favoriteRemove) : L.t(.favoriteAdd)) { model.toggleFavorite(station) }
-            Button(L.t(.rename)) { model.renaming = station }
-            Button(L.t(.remove), role: .destructive) { model.remove(station) }
-        }
+        .contextMenu { menuItems }
+    }
+
+    @ViewBuilder var menuItems: some View {
+        Button(model.library.isFavorite(station.id) ? L.t(.favoriteRemove) : L.t(.favoriteAdd)) { model.toggleFavorite(station) }
+        Button(L.t(.rename)) { model.renaming = station }
+        Button(L.t(.remove), role: .destructive) { model.remove(station) }
     }
 }
 

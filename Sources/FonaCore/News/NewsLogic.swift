@@ -3,7 +3,10 @@ import Foundation
 /// The news switch as a pure state machine (PLAN §6.3/§6.4). No audio, no network, no clock of its own:
 /// the app feeds events with the current time and carries out the returned actions. Every row of the table is tested.
 public struct NewsLogic: Sendable {
-    public enum State: Equatable, Sendable { case off, ready, news(since: Date, titleSeen: Bool), cooldown(until: Date) }
+    public enum State: Equatable, Sendable { case off, ready, news(since: Date, titleSeen: Bool), cooldown(until: Date)
+        /// The user went back to the programme while the bulletin still runs: end detection goes on, no fades (user 2026-11-14).
+        case skipped(since: Date, titleSeen: Bool)
+    }
 
     public enum Event: Equatable, Sendable {
         case setEnabled(Bool)
@@ -15,6 +18,8 @@ public struct NewsLogic: Sendable {
         case title(String)
         case tick
         case backNow
+        /// Back to the still running bulletin after `backNow`.
+        case rejoin
         case newsStreamFailed
     }
 
@@ -90,7 +95,7 @@ public struct NewsLogic: Sendable {
             return reconcile(now)
         case (_, .program(let playing, let isNews)):
             programPlaying = playing; programIsNews = isNews
-            if case .news = state, isNews && playing { state = .off; return [.stopNewsChain] }  // news became the programme
+            if state.onAir, isNews && playing { state = .off; return [.stopNewsChain] }  // news became the programme
             return reconcile(now)
 
         case (.ready, .tone(let ago)) where inScheduleWindow(now):
@@ -113,18 +118,23 @@ public struct NewsLogic: Sendable {
             }
             return []
 
-        case (.news(let since, _), .title(let t)):
+        case (.news(let since, let seen), .title(let t)), (.skipped(let since, let seen), .title(let t)):
             let matched = Self.isNewsTitle(t)
             lastTitleMatched = matched
-            if matched { state = .news(since: since, titleSeen: true); return [] }
+            if matched { state = state.with(since: since, titleSeen: true); return [] }
             // without a news title in this episode (09:00/00:00 in P0-b) only the bare station name is "still news";
             // the first real programme title ends it
-            if case .news(_, true) = state { return endNews(now) }
-            return Self.isStationName(t) ? [] : endNews(now)
-        case (.news(let since, let seen), .tick):
+            return seen || !Self.isStationName(t) ? endNews(now) : []
+        case (.news(let since, let seen), .tick), (.skipped(let since, let seen), .tick):
             let limit = seen ? config.hardMaxMinutes : config.maxMinutes
             return now.timeIntervalSince(since) >= limit * 60 ? endNews(now) : []
-        case (.news, .backNow), (.news, .newsStreamFailed):
+        case (.news(let since, let seen), .backNow):
+            state = .skipped(since: since, titleSeen: seen)
+            return [.fadeToProgram]
+        case (.skipped(let since, let seen), .rejoin):
+            state = .news(since: since, titleSeen: seen)
+            return [.fadeToNews(replaySeconds: 0)]  // live, from where the bulletin is now
+        case (.news, .newsStreamFailed), (.skipped, .newsStreamFailed):
             return endNews(now)
         case (.news, .tone):
             return []  // already on the news
@@ -141,8 +151,9 @@ public struct NewsLogic: Sendable {
     }
 
     mutating func endNews(_ now: Date) -> [Action] {
+        let wasHeard = { if case .news = state { return true }; return false }()
         state = .cooldown(until: now.addingTimeInterval(config.cooldownMinutes * 60))
-        return [.fadeToProgram]
+        return wasHeard ? [.fadeToProgram] : []
     }
 
     /// Starts or stops watching when the conditions change.
@@ -163,5 +174,14 @@ public struct NewsLogic: Sendable {
         default:
             return []
         }
+    }
+}
+
+extension NewsLogic.State {
+    /// A bulletin is running, heard or skipped.
+    public var onAir: Bool { switch self { case .news, .skipped: return true; default: return false } }
+    public var isSkipped: Bool { if case .skipped = self { return true }; return false }
+    func with(since: Date, titleSeen: Bool) -> Self {
+        isSkipped ? .skipped(since: since, titleSeen: titleSeen) : .news(since: since, titleSeen: titleSeen)
     }
 }

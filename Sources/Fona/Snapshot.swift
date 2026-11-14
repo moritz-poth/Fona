@@ -40,7 +40,9 @@ enum Snapshot {
             model.updater.available = nil
             model.newsActive = true
             render(PopoverView(model: model, settings: model.settings), "2-news\(suffix)", out, dark, CGSize(width: 360, height: 600))
-            model.newsActive = false; model.tab = .all
+            model.newsActive = false; model.newsSkipped = true
+            render(PopoverView(model: model, settings: model.settings), "2b-news-skipped\(suffix)", out, dark, CGSize(width: 360, height: 600))
+            model.newsSkipped = false; model.tab = .all
             render(PopoverView(model: model, settings: model.settings), "3-all\(suffix)", out, dark, CGSize(width: 360, height: 600))
             model.addSheet = true
             render(PopoverView(model: model, settings: model.settings), "4-add\(suffix)", out, dark, CGSize(width: 360, height: 600))

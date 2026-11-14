@@ -17,7 +17,7 @@ public enum MusicSearch: String, CaseIterable, Sendable {
     static let quotes = "\"'„“”«»‚‘’"
 
     /// Artist and track from the stream title, or nil when the title does not name both (then no search).
-    /// Formats: `Artist - Title` (ICY convention, also – and —) and `"Title" von|by Artist` (e.g. DLF Kultur).
+    /// Formats: `Artist - Title` (ICY convention, also – and —), `"Title" von|by Artist` and `Title von Artist` (DLF stations).
     public static func track(_ raw: String, station: String? = nil) -> Track? {
         let s = Sanitize.display(raw).trimmingCharacters(in: .whitespaces)
         var artist = "", title = ""
@@ -29,8 +29,13 @@ public enum MusicSearch: String, CaseIterable, Sendable {
                 break
             }
         }
+        if !title.isEmpty, let r = artist.range(of: #"\s[-–—]\s"#, options: .regularExpression) {
+            artist = String(artist[..<r.lowerBound])  // DLF: "Song" von U2 - Vier Männer, … (feature title after the dash)
+        }
         if title.isEmpty, let r = s.range(of: #"\s[-–—]\s"#, options: .regularExpression) {
             artist = String(s[..<r.lowerBound]); title = String(s[r.upperBound...])
+        } else if title.isEmpty, let r = s.range(of: " von ", options: .backwards) {
+            title = String(s[..<r.lowerBound]); artist = String(s[r.upperBound...])  // DLF: Heartbreak im Wedding von Wanda
         }
         let clean = { (x: String) in x.trimmingCharacters(in: CharacterSet(charactersIn: quotes).union(.whitespaces)) }
         artist = clean(artist); title = clean(title)

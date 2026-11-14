@@ -15,6 +15,9 @@ final class AppUpdater: ObservableObject {
     }
     let settings: AppSettings
     var timer: Timer?
+    /// Set by AppModel: was a station playing when the update was handed over? Then the new app plays it again.
+    var isPlaying: () -> Bool = { false }
+    static let resumeKey = "resumeAfterUpdate"
 
     static var current: String { Bundle.main.object(forInfoDictionaryKey: "FonaRelease") as? String ?? "dev" }
     /// Started from the Downloads folder or the DMG, macOS runs the app from a hidden temporary copy
@@ -83,6 +86,7 @@ final class AppUpdater: ObservableObject {
                 try sig.write(to: dir.appendingPathComponent("pending.zip.sig"), options: .atomic)
                 let helper = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/FonaUpdater.app")
                 FileLog.shared.write("handing update \(r.tag) to the updater")
+                UserDefaults.standard.set(isPlaying(), forKey: Self.resumeKey)
                 NSWorkspace.shared.openApplication(at: helper, configuration: NSWorkspace.OpenConfiguration()) { _, error in
                     if let error { FileLog.shared.write("updater could not start: \(error.localizedDescription)") }
                 }

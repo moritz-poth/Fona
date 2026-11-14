@@ -117,6 +117,7 @@ final class AppModel: ObservableObject {
         news.log = { log.notice("\($0, privacy: .public)"); FileLog.shared.write($0) }
         FileLog.shared.write("start Fona \(version) (\(build))")
         if AppUpdater.translocated { notice = L.t(.moveToApplications) }
+        updater.isPlaying = { [weak self] in self?.isPlaying ?? false }
         updater.start()
         applyNewsSettings()
         news.setEnabled(settings.newsEnabled)
@@ -127,8 +128,11 @@ final class AppModel: ObservableObject {
         settings.onVolume = { [weak self] v in self?.player.volume = Float(v) }
         if CommandLine.arguments.contains("--mute") { player.volume = 0; settings.onVolume = nil }
         // the last station is ready in the header after a restart – one click on Play (user request 2026-11-12)
+        // after an update the station that was playing goes on by itself (user 2026-11-14)
+        let afterUpdate = UserDefaults.standard.bool(forKey: AppUpdater.resumeKey)
+        UserDefaults.standard.removeObject(forKey: AppUpdater.resumeKey)
         if let id = settings.lastStationID, let s = library.station(id) {
-            if settings.resumeOnLaunch { play(s) } else { current = s }
+            if settings.resumeOnLaunch || afterUpdate { play(s) } else { current = s }
         }
         // developer launch argument: --selftest (runs the self-test, sends the report, quits)
         if CommandLine.arguments.contains("--selftest") {

@@ -13,8 +13,11 @@ struct PopoverView: View {
                 NewsRow(model: model, settings: settings)
                 SegmentPicker(tab: $model.tab)
                 if let n = model.notice { NoticeCard(text: n) { model.notice = nil } }
-                if model.tab == .favorites { FavoritesList(model: model) } else { AllStations(model: model, settings: settings) }
-                UpdateBanner(updater: model.updater)  // sits on the footer line (user request 2026-11-13)
+                Group {
+                    if model.tab == .favorites { FavoritesList(model: model) } else { AllStations(model: model, settings: settings) }
+                }
+                // floats over the list: only the rounded card hides rows, the list scrolls on under it (user 2026-11-14)
+                .safeAreaInset(edge: .bottom, spacing: 0) { UpdateBanner(updater: model.updater) }
                 FooterBar(model: model, settings: settings)
             }
             if model.addSheet { AddStationSheet(model: model).transition(.move(edge: .top)) }
@@ -643,7 +646,9 @@ struct UpdateBanner: View {
             }
             }
             .padding(10)
-            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.soft))
+            // Theme.soft is see-through in dark mode: opaque base under it, now that rows pass behind the card
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.soft).background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
+                .shadow(color: .black.opacity(0.12), radius: 6, y: 2))
             .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 12)  // same gap below as at the sides
         }
     }

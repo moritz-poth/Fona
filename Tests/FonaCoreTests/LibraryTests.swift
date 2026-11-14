@@ -106,6 +106,10 @@ func liveRadioBrowserSearch() async throws {
     #expect(MusicSearch.track("„Heartless“ by Isabel van Gelder") == want)
     #expect(MusicSearch.track("Isabel van Gelder - Heartless") == want)
     #expect(MusicSearch.track("Isabel van Gelder – Heartless")?.query == "Isabel van Gelder - Heartless")
+    #expect(MusicSearch.track("Heartbreak im Wedding von Wanda") == .init(artist: "Wanda", title: "Heartbreak im Wedding"))  // DLF recording 2026-11-14
+    #expect(MusicSearch.track("\"Carneval De Luz\" von U2 - Vier Männer, 50 Jahre und ein neues Album, Christoph Reimann")
+            == .init(artist: "U2", title: "Carneval De Luz"))
+    #expect(MusicSearch.track("Deutschlandfunk - Alles von Relevanz", station: "Deutschlandfunk") == nil)
     #expect(MusicSearch.track("Jay-Z - 99 Problems")?.artist == "Jay-Z")              // hyphen without spaces stays
     for none in ["", "radioeins", "Die Sendung mit Musik", " - ", "radioeins - Live", "x - https://evil.example"] {
         #expect(MusicSearch.track(none, station: "radioeins") == nil, "\(none)")

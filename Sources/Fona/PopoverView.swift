@@ -51,16 +51,8 @@ struct Header: View {
         }
         .padding(16)
         if model.newsSkipped {
-            HStack(spacing: 8) {
-                Image(systemName: "newspaper").font(.system(size: 11, weight: .semibold)).accessibilityHidden(true)
-                Text(L.t(.newsStillOn)).font(.system(size: 12)).lineLimit(1)
-                Spacer()
-                Button(L.t(.toNews)) { model.rejoinNews() }.buttonStyle(FieldButtonStyle()).fixedSize()
-            }
-            .foregroundStyle(Theme.text2)
-            // 6 + 28 + 6: header + strip = 120 pt like NewsHeader, so the window no longer jumps (user 2026-11-14)
-            .padding(.horizontal, 16).padding(.vertical, 6)
-            .background(Theme.soft)
+            NewsStrip(symbol: "newspaper", text: L.t(.newsStillOn), button: L.t(.toNews)) { model.rejoinNews() }
+                .background(Theme.soft)
         }
         }
         .background(Theme.surface)
@@ -71,7 +63,7 @@ struct Header: View {
 struct NewsHeader: View {
     @ObservedObject var model: AppModel
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
                 StationLogo(initials: "DLF", size: 48, active: true)  // letters only up here, bars only in the list (user 2026-11-14)
                 VStack(alignment: .leading, spacing: 3) {
@@ -83,17 +75,30 @@ struct NewsHeader: View {
                 Spacer(minLength: 0)
                 PlayButton(model: model)
             }
-            HStack(spacing: 8) {
-                Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .semibold)).accessibilityHidden(true)
-                Text(verbatim: L.f(.newsBackTo, model.current?.displayName ?? "")).lineLimit(1)
-                Spacer()
-                Button(L.t(.backNow)) { model.backFromNews() }.buttonStyle(FieldButtonStyle())
+            .padding(16)
+            NewsStrip(symbol: "arrow.uturn.backward", text: L.f(.newsBackTo, model.current?.displayName ?? ""), button: L.t(.backNow)) {
+                model.backFromNews()
             }
-            .foregroundStyle(Theme.text2)
         }
         .foregroundStyle(Theme.text)
-        .padding(16)
         .background(Theme.soft)
+    }
+}
+
+/// The line under both headers during the news ("Jetzt zurück" / "Zu den Nachrichten"): one layout, so text and
+/// button sit in exactly the same place in both (user 2026-11-14). 6 + 28 + 6 under the 80 pt header row = 120 pt.
+struct NewsStrip: View {
+    let symbol: String, text: String, button: String
+    let action: () -> Void
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: symbol).font(.system(size: 11, weight: .semibold)).frame(width: 14).accessibilityHidden(true)
+            Text(verbatim: text).font(.system(size: 12)).lineLimit(1)
+            Spacer(minLength: 8)
+            Button(button, action: action).buttonStyle(FieldButtonStyle()).fixedSize()
+        }
+        .foregroundStyle(Theme.text2)
+        .padding(.horizontal, 16).padding(.vertical, 6)
     }
 }
 

@@ -130,7 +130,8 @@ struct Rng {
         #expect(!t.artist.isEmpty && !t.title.isEmpty && t.query.count <= 150)
         for s in MusicSearch.allCases {
             let u = s.webURL(t, german: true)
-            #expect(u?.scheme == "https" && u?.query?.contains("&") != true && u?.fragment == nil)
+            // the title never adds a parameter: at most the one fixed "&i=digital-music" (Amazon)
+            #expect(u?.scheme == "https" && (u?.query ?? "").components(separatedBy: "&").count <= 2 && u?.fragment == nil)
         }
     }
 }

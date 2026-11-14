@@ -119,6 +119,10 @@ func liveRadioBrowserSearch() async throws {
         #expect(web.scheme == "https" && web.host?.contains("evil") == false)
         #expect(!web.absoluteString.contains("&Black") && !web.absoluteString.contains("#") && !web.absoluteString.contains("/../"))
     }
-    #expect(MusicSearch.spotify.appURL(MusicSearch.track("Nils Frahm - Says")!)?.absoluteString == "spotify:search:Nils%20Frahm%20-%20Says")
+    let says = MusicSearch.track("Nils Frahm - Says")!
+    #expect(MusicSearch.spotify.appURL(says)?.absoluteString == "spotify://search/Nils%20Frahm%20Says")
+    #expect(MusicSearch.amazonMusic.webURL(says, german: true)?.absoluteString == "https://www.amazon.de/s?k=Nils+Frahm+Says&i=digital-music")
+    #expect(MusicSearch.qobuz.webURL(says, german: true)?.absoluteString == "https://www.qobuz.com/de-de/search/tracks/Nils%20Frahm%20Says")
+    #expect(MusicSearch.amazonMusic.webURL(MusicSearch.track("A+B - C&i=x")!, german: true)?.query == "k=A%2BB+C%26i%3Dx&i=digital-music")
     #expect(MusicSearch.appleMusic.appURL(t) == nil)
 }

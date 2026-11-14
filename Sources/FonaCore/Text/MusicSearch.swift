@@ -40,7 +40,8 @@ public enum MusicSearch: String, CaseIterable, Sendable {
         return Track(artist: artist, title: title)
     }
 
-    /// Bundle id of the desktop app, for the services whose app search link is verified.
+    /// Bundle id of the desktop app, for the services whose app search link is verified (Apple Music: music://, itmss://
+    /// and musics:// open the app without a search – test 2026-11-14, so its website).
     public var appBundleID: String? {
         switch self {
         case .spotify: return "com.spotify.client"
@@ -48,11 +49,17 @@ public enum MusicSearch: String, CaseIterable, Sendable {
         }
     }
 
-    static func encoded(_ t: Track) -> String { t.query.addingPercentEncoding(withAllowedCharacters: .alphanumerics.union(CharacterSet(charactersIn: "-"))) ?? "" }
+    static func encoded(_ t: Track) -> String { percent(t.query) }
+    /// "Artist Title": the Spotify app, Amazon and Qobuz found nothing with the dash (scripts/test-music-search.sh, 2026-11-14).
+    static func plain(_ t: Track) -> String { percent(String("\(t.artist) \(t.title)".prefix(150))) }
+    static func percent(_ s: String) -> String {
+        s.addingPercentEncoding(withAllowedCharacters: .alphanumerics.union(CharacterSet(charactersIn: "-"))) ?? ""
+    }
 
     public func appURL(_ t: Track) -> URL? {
         switch self {
-        case .spotify: return URL(string: "spotify:search:\(Self.encoded(t))")
+        // spotify:search: showed "+" in the app's search field; spotify://search/ does not (user test 2026-11-14)
+        case .spotify: return URL(string: "spotify://search/\(Self.plain(t))")
         default: return nil
         }
     }
@@ -63,10 +70,13 @@ public enum MusicSearch: String, CaseIterable, Sendable {
         case .spotify: return URL(string: "https://open.spotify.com/search/\(q)")
         case .appleMusic: return URL(string: "https://music.apple.com/\(german ? "de" : "us")/search?term=\(q)")
         case .youtubeMusic: return URL(string: "https://music.youtube.com/search?q=\(q)")
-        case .amazonMusic: return URL(string: "https://music.amazon.\(german ? "de" : "com")/search/\(q)")
+        // music.amazon.* search pages first ask for favourite artists; the shop's digital-music search works (test 2026-11-14)
+        case .amazonMusic:
+            return URL(string: "https://www.amazon.\(german ? "de" : "com")/s?k=\(Self.plain(t).replacingOccurrences(of: "%20", with: "+"))&i=digital-music")
         case .deezer: return URL(string: "https://www.deezer.com/search/\(q)")
         case .tidal: return URL(string: "https://listen.tidal.com/search?q=\(q)")
-        case .qobuz: return URL(string: "https://play.qobuz.com/search?q=\(q)")
+        // play.qobuz.com wants a login; the public store search, tracks tab (user test 2026-11-14)
+        case .qobuz: return URL(string: "https://www.qobuz.com/\(german ? "de-de" : "us-en")/search/tracks/\(Self.plain(t))")
         case .soundcloud: return URL(string: "https://soundcloud.com/search?q=\(q)")
         }
     }

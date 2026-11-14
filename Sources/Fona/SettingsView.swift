@@ -12,12 +12,19 @@ struct SettingsView: View {
         self.model = model; self.settings = settings; self.updater = model.updater
     }
 
-    var updateStatus: String? {
+    /// Always one line, so the settings never shift (user 2026-11-14): last check → animated search → result.
+    var updateStatus: String {
         switch updater.state {
-        case .checking: return "…"
+        case .checking: return L.t(.checkingUpdates)
         case .upToDate: return L.t(.upToDate)
         case .failed(let m): return m
-        default: return updater.available.map { L.f(.updateAvailable, String($0.tag.dropFirst($0.tag.hasPrefix("v") ? 1 : 0))) }
+        default:
+            if let a = updater.available { return L.f(.updateAvailable, String(a.tag.dropFirst(a.tag.hasPrefix("v") ? 1 : 0))) }
+            guard let d = updater.lastCheck else { return L.t(.notChecked) }
+            let f = DateFormatter()
+            f.locale = Locale(identifier: L.language.rawValue)
+            f.doesRelativeDateFormatting = true; f.dateStyle = .medium; f.timeStyle = .short
+            return L.f(.lastChecked, f.string(from: d))
         }
     }
 
@@ -62,7 +69,7 @@ struct SettingsView: View {
                     }
                 }
                 section(L.t(.updates)) {
-                    row(L.f(.version, AppUpdater.current), hint: updateStatus) {
+                    row(L.f(.version, AppUpdater.current), hint: updateStatus, dots: updater.state == .checking) {
                         Button(L.t(.checkNow)) { model.updater.check(manual: true) }.buttonStyle(FieldButtonStyle())
                             .disabled(model.updater.state == .checking)
                     }
@@ -141,11 +148,17 @@ struct SettingsView: View {
         }
     }
 
-    func row(_ label: String, hint: String? = nil, @ViewBuilder control: () -> some View) -> some View {
+    func row(_ label: String, hint: String? = nil, dots: Bool = false, @ViewBuilder control: () -> some View) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                if let hint { Text(hint).font(.system(size: 11)).foregroundStyle(Theme.text2) }
+                if let hint {
+                    HStack(spacing: 0) {
+                        Text(hint).lineLimit(1)
+                        if dots { WaitingDots() }
+                    }
+                    .font(.system(size: 11)).foregroundStyle(Theme.text2)
+                }
             }
             Spacer()
             control()
@@ -225,5 +238,19 @@ struct ProblemSheet: View {
         .padding(20)
         .frame(width: 440)
         .background(Theme.bg)
+    }
+}
+
+/// Three dots lighting up one after another while something is being fetched (width stays the same).
+struct WaitingDots: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.35)) { ctx in
+            let step = reduceMotion ? 3 : Int(ctx.date.timeIntervalSinceReferenceDate / 0.35) % 4
+            HStack(spacing: 0) {
+                ForEach(0..<3, id: \.self) { i in Text(verbatim: ".").opacity(i < step ? 1 : 0.2) }
+            }
+        }
+        .accessibilityHidden(true)
     }
 }

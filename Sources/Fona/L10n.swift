@@ -12,7 +12,7 @@ enum L {
         case support, selfTest, selfTestHint, runSelfTest, report, reportButton, showLog, likeFona, likeFonaHint, coffee
         case play, pause, settingsButton, favoriteAdd, favoriteRemove, rename, remove, quit, connecting, buffering, reconnecting
         case libraryReset, selfTestPassed, selfTestFailed, stationCount, sortedByPopularity, sortedByName, findSong, noTrackInfo, done
-        case updates, version, checkNow, upToDate, updateCheckFailed, updateFailed, updateAvailable, install, skipUpdate, installManual, betas, betasHint
+        case updates, version, checkNow, upToDate, checkingUpdates, lastChecked, notChecked, updateCheckFailed, updateFailed, updateAvailable, install, skipUpdate, installManual, betas, betasHint
         case moveToApplications, manual, about, aboutCopyright, aboutLicense, aboutWarranty, sourceCode, license, showManual
         case on, off, newsOnAir, backTo, stationNotFavourite
         case close, hideFona, closeSettings, edit, undo, redo, cut, copy, paste, selectAll, volume, clearSearch
@@ -133,6 +133,9 @@ enum L {
         case .version: return ("Version %@", "Version %@")
         case .checkNow: return ("Jetzt suchen", "Check Now")
         case .upToDate: return ("Fona ist aktuell.", "Fona is up to date.")
+        case .checkingUpdates: return ("Suche nach Updates", "Checking for updates")
+        case .lastChecked: return ("Zuletzt geprüft: %@", "Last checked: %@")
+        case .notChecked: return ("Noch nicht nach Updates gesucht", "Not checked for updates yet")
         case .updateCheckFailed: return ("Konnte nicht nach Updates suchen. Prüfe die Internetverbindung.", "Could not check for updates. Check the internet connection.")
         case .updateFailed: return ("Das Update konnte nicht geladen oder geprüft werden.", "The update could not be downloaded or verified.")
         case .updateAvailable: return ("Fona %@ ist verfügbar.", "Fona %@ is available.")

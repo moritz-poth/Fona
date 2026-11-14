@@ -9,6 +9,10 @@ final class AppUpdater: ObservableObject {
 
     @Published var available: Release?
     @Published var state = State.idle
+    /// Last successful check (automatic or manual) – shown in settings when idle (user 2026-11-14).
+    @Published var lastCheck = UserDefaults.standard.object(forKey: "lastUpdateCheck") as? Date {
+        didSet { UserDefaults.standard.set(lastCheck, forKey: "lastUpdateCheck") }
+    }
     let settings: AppSettings
     var timer: Timer?
 
@@ -41,6 +45,7 @@ final class AppUpdater: ObservableObject {
                 release = nil
                 if manual { state = .failed(L.t(.updateCheckFailed)); return }
             }
+            lastCheck = Date()
             if manual { settings.skippedUpdate = nil }  // a manual check shows a skipped update again
             if let release, let new = AppVersion(release.tag), let mine = AppVersion(Self.current), mine < new,
                release.tag != settings.skippedUpdate {

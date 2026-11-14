@@ -153,3 +153,10 @@ func newsTitleRule(_ t: String, _ expected: Bool) { #expect(NewsLogic.isNewsTitl
     #expect(l.handle(.title("Vor 15 Jahren: Silvio Berlusconi tritt zurück"), now: c.at(9, 5, 17)) == [.fadeToProgram])
     if case .cooldown = l.state {} else { Issue.record("expected cooldown, got \(l.state)") }
 }
+
+@MainActor @Test func onlyDeutschlandfunkItselfIsTheNewsStation() {
+    #expect(NewsWatcher.isNewsStation("https://st01.sslstream.dlf.de/dlf/01/high/aac/stream.aac?aggregator=web"))
+    #expect(NewsWatcher.isNewsStation(NewsWatcher.newsURL))
+    #expect(!NewsWatcher.isNewsStation("https://st02.sslstream.dlf.de/dlf/02/128/mp3/stream.mp3"))  // Kultur
+    #expect(!NewsWatcher.isNewsStation("https://st03.sslstream.dlf.de/dlf/03/high/aac/stream.aac?aggregator=web"))  // Nova
+}

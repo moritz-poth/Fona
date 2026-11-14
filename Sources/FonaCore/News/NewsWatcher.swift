@@ -91,7 +91,8 @@ public final class NewsWatcher {
     /// Is this programme Deutschlandfunk itself (then there is nothing to switch to)?
     public static func isNewsStation(_ url: String) -> Bool {
         let u = url.lowercased()
-        return u.contains("dlf.de/dlf/") || u.contains("/ard/dlf/") || u.contains("deutschlandfunk.de") && !u.contains("kultur") && !u.contains("nova")
+        // /dlf/01/ only: Kultur is /dlf/02/, Nova /dlf/03/ (Nova got the news bars and no news switch, user 2026-11-14)
+        return u.contains("dlf.de/dlf/01/") || u.contains("/ard/dlf/") || u.contains("deutschlandfunk.de") && !u.contains("kultur") && !u.contains("nova")
     }
 
     public func configure(halfHours: Bool, maxMinutes: Int) {

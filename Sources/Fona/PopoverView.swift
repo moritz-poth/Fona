@@ -199,7 +199,8 @@ struct StationRow: View {
     var body: some View {
         let isCurrent = model.current?.url == station.url && model.isPlaying
         // during the news the bars sit on the station that is heard (user 2026-11-14)
-        let bars = model.newsActive ? model.isPlaying && NewsWatcher.isNewsStation(station.url) : isCurrent
+        let newsRow = model.newsActive && model.isPlaying && NewsWatcher.isNewsStation(station.url)
+        let bars = model.newsActive ? newsRow : isCurrent
         HStack(spacing: 10) {
             StationLogo(initials: station.initials, active: isCurrent)
             Text(verbatim: station.displayName).fontWeight(isCurrent ? .semibold : .regular).lineLimit(1).truncationMode(.middle)
@@ -217,7 +218,8 @@ struct StationRow: View {
             .accessibilityHidden(true)  // same entries as the accessibility actions below
         }
         .padding(.horizontal, 8).frame(height: 40)
-        .background(RoundedRectangle(cornerRadius: 7).fill(isCurrent ? Theme.soft : .clear))
+        // news station at half intensity while it is heard; a light hover like the "…" (user 2026-11-14)
+        .background(RoundedRectangle(cornerRadius: 7).fill(isCurrent ? Theme.soft : newsRow ? Theme.soft.opacity(0.5) : hovering ? Theme.text2.opacity(0.08) : .clear))
         .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Theme.switchOn, lineWidth: 1.5).opacity(menuOpen ? 1 : 0))
         .contentShape(Rectangle())
         // a tap gesture, not a Button: the Button kept the mouse and favourites could not be dragged (user 2026-11-14)

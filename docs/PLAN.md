@@ -490,6 +490,7 @@ Code-Prüfung gegen `accessibility.md`/`voiceover.md` (HIG); 10 Befunde behoben:
 - Veröffentlicht 2026-11-13: Prerelease **v0.1.0-beta.10** (Start während laufender Nachrichten springt hinein, Update überspringen).
 - Lautstärke 20 % länger (53 pt), rechts neben dem Ein/Aus-Knopf. Pegelbalken skalieren auf den lautesten Moment der letzten ≈ 3 s (12 dB Bereich) statt fest −36…−8 dBFS – an radioeins gemessen ≈ 50 % mehr Ausschlag.
 - Veröffentlicht 2026-11-13: Prerelease **v0.1.0-beta.11** (Lautstärke länger und rechts, lebendigere Pegelbalken).
+- Veröffentlicht 2026-11-14: Prerelease **v0.1.0-beta.12** („Jetzt zurück“ lässt „Zu den Nachrichten“ stehen, Pegelbalken bei Deutschlandfunk während der Nachrichten, „…“-Menü an Senderzeilen, Favoriten-Ziehen repariert).
 
 ### Sicherheits-Scan 2026-11-12 (Claude Security, ganzes Repo, medium, Revision c28d63e) · offen
 - Bericht lokal: `CLAUDE-SECURITY-20261112-135126/` (git-ignoriert). 2 Funde, beide LOW, je 3/3 bestätigt; 2 weitere Kandidaten 0/3 verworfen.

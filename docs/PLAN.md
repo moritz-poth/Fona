@@ -336,7 +336,7 @@ Spike: `spikes/p0a/` (sandboxed App + nicht sandboxed Hilfsprogramm in `Contents
 - macOS 14: nicht getestet – keine Testumgebung, Nutzer hat den Test am 2026-11-13 gestrichen. Restrisiko: Container-Abfrage nach Update auf 14 unbekannt.
 - Rest: ein leerer Container-Ordner `io.github.moritz-poth.fona.spike` bleibt (macOS schützt ihn vor dem Löschen per Terminal; im Finder löschbar).
 
-### P0-b Nachrichten-Messung – Werktag ausgewertet 2026-11-13 · Ergebnis: **Ja**; Wochenende offen
+### P0-b Nachrichten-Messung – Werktag 2026-11-13, Wochenende 2026-11-16 ausgewertet · Ergebnis: **Ja**
 24,5-h-Mitschnitt 2026-11-12 00:20 – 2026-11-13 00:50 (`scripts/record-dlf.py` → `design/research/24h/`, stündliche Dateien + `titles.log`), geprüft mit `fona-tonescan` (Stundengrenzen als zusammengefügte 60-s-Stücke, weil das Zeitzeichen um :59:58 über zwei Dateien läuft).
 - **Zeitzeichen: 38 von 38 Ausgaben, 0 Fehlalarme** – alle 24 vollen Stunden (01:00 … 00:00) und alle 14 halben (04:30 … 17:30). Langer Piep 0,75–0,80 s, Beginn ≈ 2 s vor der Stunde.
 - Zeitplan: volle Stunde rund um die Uhr, halbe Stunde nur 04:30–17:30 (nicht 00:30–03:30 und 18:30–23:30).
@@ -345,7 +345,7 @@ Spike: `spikes/p0a/` (sandboxed App + nicht sandboxed Hilfsprogramm in `Contents
 - Titelregel `^Nachrichten\b` hält: „Nachrichtendienstreform: …“ (15:36, @mediasres) passt nicht; liegt zudem außerhalb des Zeitfensters.
 - Reconnects des Rekorders nur um xx:20 (Stream bricht alle 6 h ab), keine Lücke an einer Nachrichtenausgabe.
 - **Ende ohne Nachrichten-Titel (umgesetzt 2026-11-13):** Episode endet beim ersten Titel, der weder `^Nachrichten\b` noch reiner Sendername („Deutschlandfunk…“) ist; Höchstdauer bleibt als Rückfall. Auf den Werktags-Titeln nachgespielt: endet um 09:00 und 00:00 nach ≈ 5:16 min, bei keiner anderen Ausgabe zu früh.
-- Wochenend-Mitschnitt läuft seit 2026-11-13 16:35 bis 2026-11-16 00:20 → `design/research/weekend/`.
+- **Wochenende** (Fr 2026-11-13 16:30 – Mo 00:20, `design/research/weekend/`, Lücke So 11:14–11:24): volle Stunden 55/56 mit Zeitzeichen; die fehlende (Sa 21:00) hatte keine Nachrichten (Hörspiel lief durch). Halbe Stunden mit Zeitzeichen genau dort, wo die Titel Nachrichten zeigen: Fr 17:30, Sa 05:30–08:30, So 07:30–08:30; sonst keine Ausgabe zur halben Stunde (Nutzermeldung Sa 14:30 = richtig, es gab keine). 2 Zeitzeichen mitten in der Stunde (So 05:46, 06:22) – außerhalb des ±90-s-Fensters, werden ignoriert. Länge meist 5 min, 10 min um Fr 18/23, Sa 08/13/18, So 08/12/16/18 Uhr. Sa 12:00: Zeitzeichen, aber nur Sendername als Titel → Ende über erste Nicht-Sendername-Regel.
 
 ### P0-c HLS – 2026-11-12 · Ergebnis: **Ja** (Dekodierung); Dauertest → P3
 Spike: `spikes/p0c/main.swift` (eigener TS-Demuxer PAT/PMT/PES → ADTS → `AudioFileStream` + `AVAudioConverter`).

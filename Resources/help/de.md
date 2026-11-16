@@ -30,6 +30,8 @@ Fona spielt Internetradio aus der Menüleiste. Beginnen bei Deutschlandfunk die 
 - Hörst du Deutschlandfunk selbst oder hast du angehalten, schaltet Fona nichts um.
 - **Einstellungen → Zeitplan:** Fona lauscht nur rund um die volle Stunde (oder volle und halbe Stunde). Deutschlandfunk sendet nachts stündlich, tagsüber auch zur halben Stunde.
 - **Höchstdauer:** Erkennt Fona das Ende ausnahmsweise nicht am Sendungstitel, kehrt Fona nach dieser Zeit zurück (Nachrichten dauern 5–10 Minuten).
+- **Anderer Nachrichtensender:** Unter **Einstellungen → Weiteren Sender lernen** wählst du einen deiner Favoriten. Fona hört ihn dann etwa 8 Stunden still mit (auch wenn du gerade nichts hörst, solange Fona läuft; rund 60 MB pro Stunde) und lernt dabei selbst, woran man dort den Beginn der Nachrichten erkennt – an einem Jingle kurz vor oder nach der vollen Stunde oder am Sendungstitel. Danach steht er unter **Nachrichtensender** zur Auswahl. Klappt es bei einem Sender nicht, zeigt Fona „keine Nachrichten erkannt“; mit **×** entfernst du ihn.
+- Bei gelernten Sendern endet die Umschaltung am Sendungstitel oder nach der gemessenen Länge der Nachrichten (ohne Titel: rund 4 Minuten). **Jetzt zurück** und **Zu den Nachrichten** funktionieren wie bei Deutschlandfunk.
 - Datenverbrauch: Weil Deutschlandfunk mitläuft, braucht Fona etwa doppelt so viel Daten wie ein einzelner Sender – rund 115 MB pro Stunde. Ohne Umschaltung etwa die Hälfte.
 
 ## Einstellungen

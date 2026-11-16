@@ -25,6 +25,13 @@ enum Snapshot {
                 RadioBrowser.Result(stationuuid: "\(i)", name: r.0, url: "https://r\(i).example.com/s", countryCode: i == 2 ? "AT" : "DE",
                                     tags: r.1, bitrate: r.2, codec: "MP3", clickcount: 100 - i)
             }
+        // P8 demo: one learned, one learning news station
+        var b3 = LearnedStation(name: "Bayern 3", url: "https://b3.example.com/s"); b3.state = .ready
+        var p = LearnedNews(); p.newsTitles = ["*** Nachrichten"]; p.markers = [NewsMarker(template: [1], offset: 4, threshold: 0.4)]
+        p.explained = 14; p.slots = 16; b3.profile = p
+        var l1 = LearnedStation(name: "1LIVE", url: "https://1live.example.com/s"); l1.segments = [.init(start: Date(), frames: 360_000)]
+        model.learned = [b3, l1]
+        model.settings.newsStationID = b3.id
         model.query = "jazz"
         model.searchTask?.cancel(); model.searching = false
 
@@ -48,7 +55,14 @@ enum Snapshot {
             for k in all.keys { all.add(k, k == all.keys[0] ? model.results.sorted { $0.name < $1.name } : [], more: false) }
             model.browse = all; model.query = ""
             render(PopoverView(model: model, settings: model.settings), "3b-browse\(suffix)", out, dark, CGSize(width: 360, height: 600))
-            model.query = "jazz"; model.searchTask?.cancel(); model.searching = false
+            // P8 demo: one learned, one learning news station
+        var b3 = LearnedStation(name: "Bayern 3", url: "https://b3.example.com/s"); b3.state = .ready
+        var p = LearnedNews(); p.newsTitles = ["*** Nachrichten"]; p.markers = [NewsMarker(template: [1], offset: 4, threshold: 0.4)]
+        p.explained = 14; p.slots = 16; b3.profile = p
+        var l1 = LearnedStation(name: "1LIVE", url: "https://1live.example.com/s"); l1.segments = [.init(start: Date(), frames: 360_000)]
+        model.learned = [b3, l1]
+        model.settings.newsStationID = b3.id
+        model.query = "jazz"; model.searchTask?.cancel(); model.searching = false
             model.addSheet = true
             render(PopoverView(model: model, settings: model.settings), "4-add\(suffix)", out, dark, CGSize(width: 360, height: 600))
             model.addSheet = false

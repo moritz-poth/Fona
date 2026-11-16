@@ -15,6 +15,7 @@ enum L {
         case updates, version, checkNow, upToDate, checkingUpdates, lastChecked, notChecked, updateCheckFailed, updateFailed, updateAvailable, install, skipUpdate, installManual, betas, betasHint
         case moveToApplications, manual, about, aboutCopyright, aboutLicense, aboutWarranty, sourceCode, license, showManual
         case on, off, newsOnAir, backTo, stationNotFavourite
+        case newsLearn, newsLearnHint, newsLearning, newsLearnReady, newsLearnFailed, newsLearnPick, newsLearnNoFavorites, newsLearnComputing
         case close, hideFona, closeSettings, edit, undo, redo, cut, copy, paste, selectAll, volume, clearSearch
         case selfTestRunning, reportSent, reportSaved, reportFailed, reportTitle, reportDescription, reportContact, reportAttach, send
     }
@@ -32,7 +33,7 @@ enum L {
         case .allStations: return ("Alle Sender", "All Stations")
         case .recentlyPlayed: return ("Zuletzt gehört", "Recently Played")
         case .newsSwitch: return ("Nachrichten-Umschaltung", "News Switch")
-        case .newsNext: return ("Deutschlandfunk · nächste um %@", "Deutschlandfunk · next at %@")
+        case .newsNext: return ("%@ · nächste um %@", "%@ · next at %@")
         case .newsNow: return ("Läuft gerade", "On air now")
         case .newsBackTo: return ("Danach zurück zu %@", "Then back to %@")
         case .backNow: return ("Jetzt zurück", "Back Now")
@@ -126,7 +127,15 @@ enum L {
         case .clearSearch: return ("Suche löschen", "Clear search")
         case .on: return ("Ein", "On")
         case .off: return ("Aus", "Off")
-        case .newsOnAir: return ("Nachrichten von Deutschlandfunk", "News from Deutschlandfunk")
+        case .newsLearn: return ("Weiteren Sender lernen", "Learn another station")
+        case .newsLearnHint: return ("Fona hört ihn ~8 Std. still mit (≈ 60 MB/Std.)", "Fona listens silently for ~8 h (≈ 60 MB/h)")
+        case .newsLearning: return ("lernt: %@ von 8 Std.", "learning: %@ of 8 h")
+        case .newsLearnComputing: return ("wertet aus", "working it out")
+        case .newsLearnReady: return ("bereit", "ready")
+        case .newsLearnFailed: return ("keine Nachrichten erkannt", "no news found")
+        case .newsLearnPick: return ("Favorit wählen", "Choose a favourite")
+        case .newsLearnNoFavorites: return ("Erst einen Favoriten anlegen", "Add a favourite first")
+        case .newsOnAir: return ("Nachrichten von %@", "News from %@")
         case .backTo: return ("Zurück zu %@", "Back to %@")
         case .stationNotFavourite: return ("%@, kein Favorit", "%@, not a favourite")
         case .updates: return ("Updates", "Updates")

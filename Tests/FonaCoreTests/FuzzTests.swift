@@ -149,3 +149,11 @@ struct Rng {
         _ = d.flush()
     }
 }
+
+@Test func fuzzLearnedStations() {
+    var r = Rng(x: 8)
+    let seed = [UInt8](#"[{"id":"6F1E2B8C-0000-4000-8000-000000000001","name":"B","url":"https://example.com/b.mp3","state":"learning","segments":[{"start":"2026-11-16T10:00:00Z","frames":300}],"profile":{"markers":[{"template":[1,2],"offset":1,"threshold":0.3}],"newsTitles":["N"],"fillerTitles":[],"explained":1,"slots":2}}]"#.utf8)
+    for i in 0..<fuzzRounds / 10 {  // JSON decoding is slow; 2 000 rounds (100 000 with FONA_FUZZ=1)
+        _ = LearnedStation.load(Data(i % 4 == 0 ? r.bytes(r.int(300)) : r.mutate(seed)))
+    }
+}

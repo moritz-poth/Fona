@@ -5,7 +5,10 @@ import Foundation
 final class NewsSink: PCMSink, @unchecked Sendable {
     static let historySeconds = 15.0
     let ring: PCMRing
-    var detector = ToneDetector()
+    /// Start detection: Deutschlandfunk's time signal, or a learned station's markers (P8).
+    /// Returns "news started this many seconds ago" per detection.
+    var makeDetector: @Sendable () -> ([Float]) -> [Double] = NewsSink.timeSignal
+    lazy var detect = makeDetector()
     let lock = NSLock()
     var history: [Float] = []
     var live = false
@@ -13,10 +16,21 @@ final class NewsSink: PCMSink, @unchecked Sendable {
 
     init(ring: PCMRing) { self.ring = ring }
 
+    @Sendable static func timeSignal() -> ([Float]) -> [Double] {
+        let det = ToneDetector()
+        // seconds since the first pip, from the detector's own frame counter (2026-11-12 crash: two counters drifted
+        // apart after a restart of the chain and gave a negative replay length)
+        return { pcm in det.feed(pcm).map { Double(det.framesSeen - $0.toneStartFrame) / DecoderCore.sampleRate } }
+    }
+
+    func setDetector(_ make: @escaping @Sendable () -> ([Float]) -> [Double]) {
+        lock.lock(); makeDetector = make; detect = make(); lock.unlock()
+    }
+
     var bufferedSeconds: Double { lock.lock(); defer { lock.unlock() }; return Double(history.count / 2) / DecoderCore.sampleRate }
 
     func reset() {
-        lock.lock(); history.removeAll(); live = false; detector = ToneDetector(); lock.unlock()
+        lock.lock(); history.removeAll(); live = false; detect = makeDetector(); lock.unlock()
         ring.clear()
     }
 
@@ -26,14 +40,10 @@ final class NewsSink: PCMSink, @unchecked Sendable {
         let max = Int(Self.historySeconds * DecoderCore.sampleRate) * 2
         if history.count > max { history.removeFirst(history.count - max) }
         let forward = live
-        let det = detector
+        let det = detect
         lock.unlock()
         if forward { ring.write(pcm) }  // real-time on both sides; a full ring drops (never blocks the network)
-        // seconds since the first pip, from the detector's own frame counter (2026-11-12 crash: two counters drifted
-        // apart after a restart of the chain and gave a negative replay length)
-        for d in det.feed(pcm) {
-            onTone?(Double(det.framesSeen - d.toneStartFrame) / DecoderCore.sampleRate)
-        }
+        for ago in det(pcm) { onTone?(ago) }
     }
 
     /// Starts forwarding: the last `seconds` of history first, then live.
@@ -53,11 +63,24 @@ final class NewsSink: PCMSink, @unchecked Sendable {
     }
 }
 
-/// Runs the news switch: a second, silent Deutschlandfunk chain, time-signal and title detection, NewsLogic, crossfade.
+/// The station Fona switches to for the news: Deutschlandfunk (time signal, its own title rules) or a station Fona
+/// learned (P8: start markers and/or news titles).
+public struct NewsSource: Equatable, Sendable {
+    public var name: String
+    public var url: String
+    /// nil = Deutschlandfunk
+    public var learned: LearnedNews?
+    public init(name: String, url: String, learned: LearnedNews?) { self.name = name; self.url = url; self.learned = learned }
+    public static let deutschlandfunk = NewsSource(name: "Deutschlandfunk", url: NewsWatcher.newsURL, learned: nil)
+    /// Bulletin length when the station sends no news titles and Fona could not measure one.
+    public static let defaultLearnedSeconds = 240.0
+}
+
+/// Runs the news switch: a second, silent chain of the news station, start and title detection, NewsLogic, crossfade.
 /// All calls on the main thread.
 @MainActor
 public final class NewsWatcher {
-    public static let newsURL = "https://st01.sslstream.dlf.de/dlf/01/128/mp3/stream.mp3"
+    nonisolated public static let newsURL = "https://st01.sslstream.dlf.de/dlf/01/128/mp3/stream.mp3"
     /// Extra seconds replayed before the time signal, so the switch never lands right on the first pip.
     public static let leadInSeconds = 1.5
 
@@ -66,6 +89,8 @@ public final class NewsWatcher {
     let station: StationPlayer
     var logic: NewsLogic
     var timer: Timer?
+    public private(set) var source = NewsSource.deutschlandfunk
+    var userMaxMinutes = 10.0
     public private(set) var active = false
     public var onActive: ((Bool) -> Void)?
     /// The bulletin still runs after „Back now“ (banner with „To the news“).
@@ -97,12 +122,48 @@ public final class NewsWatcher {
 
     public func configure(halfHours: Bool, maxMinutes: Int) {
         logic.config.halfHours = halfHours
-        logic.config.maxMinutes = Double(maxMinutes)
+        userMaxMinutes = Double(maxMinutes)
+        applyLength()
+    }
+
+    /// Switches the news station; a running chain starts over with the new one.
+    public func configure(source new: NewsSource) {
+        guard new != source else { return }
+        let wasOn = logic.enabled
+        if wasOn { handle(.setEnabled(false)) }
+        source = new
+        if let l = new.learned {
+            let markers = l.markers
+            sink.setDetector { markers.isEmpty ? { _ in [] } : MarkerDetector(markers: markers).feed }
+            logic.config.titles = l.newsTitles.isEmpty ? .none : .learned(news: Set(l.newsTitles), filler: Set(l.fillerTitles))
+        } else {
+            sink.setDetector(NewsSink.timeSignal)
+            logic.config.titles = .deutschlandfunk
+        }
+        applyLength()
+        if wasOn { handle(.setEnabled(true)) }
+    }
+
+    /// The user's maximum; a learned station also ends after its measured length (+ 30 s) when titles cannot end it.
+    func applyLength() {
+        guard let l = source.learned else { logic.config.maxMinutes = userMaxMinutes; return }
+        let learned = (l.typicalSeconds ?? NewsSource.defaultLearnedSeconds) + 30
+        logic.config.maxMinutes = min(userMaxMinutes, learned / 60)
+    }
+
+    /// Is this programme the news station itself?
+    public func isCurrentNewsStation(_ url: String) -> Bool {
+        source.learned == nil ? Self.isNewsStation(url) : Self.sameStream(url, source.url)
+    }
+
+    public static func sameStream(_ a: String, _ b: String) -> Bool {
+        func key(_ u: String) -> String { u.lowercased().replacingOccurrences(of: "https://", with: "").replacingOccurrences(of: "http://", with: "") }
+        return key(a) == key(b)
     }
 
     public func setEnabled(_ on: Bool) { handle(.setEnabled(on)) }
     public func program(playing: Bool, url: String?) {
-        handle(.program(playing: playing, isNewsStation: url.map(Self.isNewsStation) ?? false))
+        handle(.program(playing: playing, isNewsStation: url.map(isCurrentNewsStation) ?? false))
     }
     public func backNow() { handle(.backNow) }
     public func rejoin() { handle(.rejoin) }
@@ -113,7 +174,7 @@ public final class NewsWatcher {
             log?("news \(a)")
             switch a {
             case .startNewsChain:
-                station.play(Self.newsURL)
+                station.play(source.url)
             case .stopNewsChain:
                 station.stop()
             case .fadeToNews(let replay):

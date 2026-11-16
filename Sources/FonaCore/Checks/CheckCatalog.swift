@@ -472,6 +472,20 @@ public enum CheckCatalog {
             Check(id: "news-title-rule", area: "news") {
                 NewsLogic.isNewsTitle("Nachrichten") && !NewsLogic.isNewsTitle("Nachrichtenleicht") ? nil : "title rule wrong"
             },
+            // P8: news/stations.json is read like foreign data
+            Check(id: "news-learned-file-hostile", area: "news") {
+                let good = #"[{"id":"6F1E2B8C-0000-4000-8000-000000000001","name":"Bayern 3","url":"https://example.com/b3.mp3","state":"ready","segments":[],"profile":{"markers":[{"template":[1,2,3],"offset":4,"threshold":0.3}],"newsTitles":["*** Nachrichten"],"fillerTitles":[],"explained":3,"slots":6}}]"#
+                guard LearnedStation.load(Data(good.utf8))?.count == 1 else { return "valid file refused" }
+                let bad = [good.replacingOccurrences(of: "https://example.com/b3.mp3", with: "file:///etc/passwd"),
+                           good.replacingOccurrences(of: "\"threshold\":0.3", with: "\"threshold\":7"),
+                           good.replacingOccurrences(of: "\"offset\":4", with: "\"offset\":-1e300"),
+                           good.replacingOccurrences(of: "Bayern 3", with: "Bayern\\u202E3"),
+                           good.replacingOccurrences(of: "\"segments\":[]", with: "\"segments\":[{\"start\":\"2026-11-16T10:00:00Z\",\"frames\":-5}]"),
+                           "[" + Array(repeating: String(good.dropFirst().dropLast()), count: 21).joined(separator: ",") + "]",
+                           String(repeating: "[", count: 100_000)]
+                for (i, b) in bad.enumerated() where LearnedStation.load(Data(b.utf8)) != nil { return "hostile file \(i) accepted" }
+                return nil
+            },
         ]
     }
 

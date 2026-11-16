@@ -42,7 +42,18 @@ public struct NewsLogic: Sendable {
         /// … the bare station name only after a full hour (09:00/00:00 bulletins have no news title, P0-b).
         public var lateJoinNoTitleMinutes = 5.0
         public var calendar = Calendar(identifier: .gregorian)
+        /// How titles are read (P8): Deutschlandfunk's own rules, a learned station's rule, or not at all.
+        public var titles = Titles.deutschlandfunk
         public init() {}
+    }
+
+    public enum Titles: Equatable, Sendable {
+        case deutschlandfunk
+        /// Normalised titles (`LearnedNews.normalize`): news on, and the slogan that may follow while it still runs.
+        /// Learned titles start the news at any time – some streams drift away from the clock (Antenne, P8).
+        case learned(news: Set<String>, filler: Set<String>)
+        /// The station sends no news titles: titles neither start nor end anything.
+        case none
     }
 
     public private(set) var state: State = .off
@@ -68,6 +79,22 @@ public struct NewsLogic: Sendable {
         t.trimmingCharacters(in: .whitespaces).lowercased().hasPrefix("deutschlandfunk")
     }
 
+    func isNews(_ t: String) -> Bool {
+        switch config.titles {
+        case .deutschlandfunk: return Self.isNewsTitle(t)
+        case .learned(let news, _): return news.contains(LearnedNews.normalize(t))
+        case .none: return false
+        }
+    }
+
+    func isFiller(_ t: String) -> Bool {
+        switch config.titles {
+        case .deutschlandfunk: return Self.isStationName(t)
+        case .learned(_, let filler): return filler.contains(LearnedNews.normalize(t))
+        case .none: return false
+        }
+    }
+
     /// Inside ±window around :00 (and :30 with half hours)?
     public func inScheduleWindow(_ now: Date) -> Bool {
         let c = config.calendar.dateComponents([.minute, .second], from: now)
@@ -78,6 +105,7 @@ public struct NewsLogic: Sendable {
 
     /// Start of the bulletin that is running now, judged from the first title and the clock; nil = no news now.
     func runningBulletinStart(title t: String, now: Date) -> Date? {
+        guard config.titles == .deutschlandfunk else { return isNews(t) ? now : nil }  // no clock for learned stations
         let c = config.calendar.dateComponents([.minute, .second], from: now)
         let secOfHour = Double((c.minute ?? 0) * 60 + (c.second ?? 0))
         let sinceMark = config.halfHours ? secOfHour.truncatingRemainder(dividingBy: 1800) : secOfHour
@@ -103,28 +131,30 @@ public struct NewsLogic: Sendable {
             return [.fadeToNews(replaySeconds: ago)]
         case (.ready, .title(let t)) where lastTitleMatched == nil:
             // first title after the chain started: the bulletin may already be running (app started at 12:02)
-            let matched = Self.isNewsTitle(t)
+            let matched = isNews(t)
             lastTitleMatched = matched
             guard let mark = runningBulletinStart(title: t, now: now) else { return [] }
             state = .news(since: mark, titleSeen: matched)  // limits count from the bulletin's start
             return [.fadeToNews(replaySeconds: 0)]
         case (.ready, .title(let t)):
-            let matched = Self.isNewsTitle(t)
+            let matched = isNews(t)
             defer { lastTitleMatched = matched }
-            // a title only starts the news inside the window, and only when it *changes* to news (not mid-programme)
-            if matched && lastTitleMatched == false && inScheduleWindow(now) {
+            // a title only starts the news when it *changes* to news (not mid-programme), for DLF only inside the window
+            if matched && lastTitleMatched == false && (inScheduleWindow(now) || config.titles != .deutschlandfunk) {
                 state = .news(since: now, titleSeen: true)
                 return [.fadeToNews(replaySeconds: config.titleReplaySeconds)]
             }
             return []
 
         case (.news(let since, let seen), .title(let t)), (.skipped(let since, let seen), .title(let t)):
-            let matched = Self.isNewsTitle(t)
+            if config.titles == .none { return [] }
+            let matched = isNews(t)
             lastTitleMatched = matched
             if matched { state = state.with(since: since, titleSeen: true); return [] }
-            // without a news title in this episode (09:00/00:00 in P0-b) only the bare station name is "still news";
-            // the first real programme title ends it
-            return seen || !Self.isStationName(t) ? endNews(now) : []
+            // DLF without a news title in this episode (09:00/00:00 in P0-b): only the bare station name is "still news",
+            // the first real programme title ends it. A learned station's slogan never ends the news.
+            if isFiller(t), !seen || config.titles != .deutschlandfunk { return [] }
+            return endNews(now)
         case (.news(let since, let seen), .tick), (.skipped(let since, let seen), .tick):
             let limit = seen ? config.hardMaxMinutes : config.maxMinutes
             return now.timeIntervalSince(since) >= limit * 60 ? endNews(now) : []
@@ -143,7 +173,7 @@ public struct NewsLogic: Sendable {
             state = .ready
             return []
         case (_, .title(let t)):
-            lastTitleMatched = Self.isNewsTitle(t)
+            lastTitleMatched = isNews(t)
             return []
         default:
             return []

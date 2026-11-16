@@ -97,8 +97,6 @@ public enum NewsLearner {
         guard tops.count >= 3 else { return ([], 0, tops.count) }
         let W = tops.map { Array(fp[($0 - preF)..<($0 + postF)]) }
         let cov = coverage(W, maxLag: Int(90 * fps))
-        var excl = [Bool](repeating: false, count: fp.count)
-        for p in all { for i in max(0, p - winF)..<min(fp.count, p + winF) { excl[i] = true } }
 
         struct Cand { var marker: NewsMarker; var neg: Double; var hits: Set<Int> }
         var tasks: [(w: Int, s: Int, len: Int)] = []
@@ -115,23 +113,31 @@ public enum NewsLearner {
                 }
             }
         }
+        // per position: index of the training slot whose window it lies in (−1: none), −2 = outside every :00/:30 window
+        var slotOf = [Int32](repeating: -2, count: fp.count)
+        for p in all { for i in max(0, p - winF)..<min(fp.count, p + winF) { slotOf[i] = -1 } }
+        for (mi, m) in tops.enumerated() { for i in max(0, m - winF)..<min(fp.count, m + winF) { slotOf[i] = Int32(mi) } }
         var results = [Cand?](repeating: nil, count: tasks.count)
+        let nTops = tops.count
         fp.withUnsafeBufferPointer { stream in
-            excl.withUnsafeBufferPointer { ex in
+            slotOf.withUnsafeBufferPointer { slot in
                 results.withUnsafeMutableBufferPointer { out in
+                    nonisolated(unsafe) let stream = stream, slot = slot, out = out
                     DispatchQueue.concurrentPerform(iterations: tasks.count) { k in
                         let t = tasks[k]
                         let tpl = Array(W[t.w][t.s..<t.s + t.len])
-                        let sc = tpl.withUnsafeBufferPointer { scan(stream, $0) }
                         var neg = 1.0
-                        for i in 0..<sc.count where !ex[i] && sc[i] < neg { neg = sc[i] }
+                        var best = [Double](repeating: 1, count: nTops)
+                        tpl.withUnsafeBufferPointer { tp in
+                            for i in 0...(stream.count - tp.count) {
+                                let sc = NewsMarker.score(stream, i, tp)
+                                let g = Int(slot[i])
+                                if g == -2 { if sc < neg { neg = sc } } else if g >= 0, sc < best[g] { best[g] = sc }
+                            }
+                        }
                         let thr = min(0.40, neg - 0.25)  // a clear gap to everything outside the :00/:30 windows
                         guard thr >= 0.15 else { return }
-                        var hits = Set<Int>()
-                        for (mi, m) in tops.enumerated() {
-                            let lo = max(0, m - winF), hi = min(sc.count, m + winF)
-                            if lo < hi, sc[lo..<hi].min()! < thr { hits.insert(mi) }
-                        }
+                        let hits = Set(best.indices.filter { best[$0] < thr })
                         guard hits.count >= 2 else { return }
                         out[k] = Cand(marker: NewsMarker(template: tpl, offset: Double(t.s - preF) / fps, threshold: thr), neg: neg, hits: hits)
                     }
@@ -147,15 +153,6 @@ public enum NewsLearner {
             chosen.append(best.marker); covered.formUnion(best.hits)
         }
         return (chosen, covered.count, tops.count)
-    }
-
-    /// Share of non-matching frames of `tpl` at every position of `stream`.
-    static func scan(_ stream: UnsafeBufferPointer<UInt32>, _ tpl: UnsafeBufferPointer<UInt32>) -> [Double] {
-        let n = stream.count - tpl.count + 1
-        guard n > 0 else { return [] }
-        var out = [Double](repeating: 1, count: n)
-        for i in 0..<n { out[i] = NewsMarker.score(stream, i, tpl) }
-        return out
     }
 
     static func regions(_ mask: [Bool], minLength: Int) -> [(Int, Int)] {

@@ -19,7 +19,8 @@ func fingerprint(_ name: String) -> [UInt32] {
     var out: [UInt32] = [], i = 0
     while i < data.count {
         let n = min(65_536, data.count - i)
-        out += f.feed(dec.decode((try? g.feed(data.subdata(in: i..<i + n))) ?? Data()))
+        // AVAudioConverter autoreleases its buffers: without a pool a CLI grew to 22 GB (2026-11-16 crash)
+        autoreleasepool { out += f.feed(dec.decode((try? g.feed(data.subdata(in: i..<i + n))) ?? Data())) }
         i += n
     }
     try? fm.createDirectory(at: cache.deletingLastPathComponent(), withIntermediateDirectories: true)

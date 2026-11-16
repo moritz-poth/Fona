@@ -36,7 +36,31 @@ struct SettingsView: View {
                 section(L.t(.newsSection)) {
                     row(L.t(.newsSwitch)) { FonaSwitch(isOn: $settings.newsEnabled, label: L.t(.newsSwitch)) }
                     divider
-                    row(L.t(.newsStation)) { Text(verbatim: "Deutschlandfunk").foregroundStyle(Theme.text2) }
+                    row(L.t(.newsStation)) {
+                        dropdown(model.learned.first { $0.id == settings.newsStationID && $0.state == .ready }?.name ?? "Deutschlandfunk",
+                                 label: L.t(.newsStation)) {
+                            Button("Deutschlandfunk") { settings.newsStationID = nil }
+                            ForEach(model.learned.filter { $0.state == .ready }) { l in Button(l.name) { settings.newsStationID = l.id } }
+                        }
+                    }
+                    // P8: stations Fona learns or learned
+                    ForEach(model.learned) { l in
+                        divider
+                        row(l.name, hint: learnStatus(l), dots: l.state == .learning) {
+                            Button { model.forgetNews(l.id) } label: { Image(systemName: "xmark") }
+                                .buttonStyle(FieldButtonStyle()).accessibilityLabel("\(l.name) – \(L.t(.remove))")
+                        }
+                    }
+                    divider
+                    row(L.t(.newsLearn), hint: L.t(.newsLearnHint)) {
+                        let candidates = model.library.favoriteStations.filter { f in
+                            !NewsWatcher.isNewsStation(f.url) && !model.learned.contains { NewsWatcher.sameStream($0.url, f.url) }
+                        }
+                        dropdown(candidates.isEmpty ? L.t(.newsLearnNoFavorites) : L.t(.newsLearnPick), label: L.t(.newsLearn)) {
+                            ForEach(candidates) { f in Button(f.displayName) { model.learnNews(f) } }
+                        }
+                        .disabled(candidates.isEmpty)
+                    }
                     divider
                     row(L.t(.scheduleLabel), hint: L.t(.scheduleHint)) {
                         dropdown(settings.newsSchedule == .hourly ? L.t(.hourly) : L.t(.hourlyAndHalf), label: L.t(.scheduleLabel)) {
@@ -135,6 +159,20 @@ struct SettingsView: View {
         .font(.system(size: 13))
         .overlay(alignment: .top) { if let t = model.toast { ToastView(text: t).padding(.top, 8) } }
         .sheet(isPresented: $model.problemSheet) { ProblemSheet(model: model) }
+    }
+
+    func learnStatus(_ l: LearnedStation) -> String {
+        switch l.state {
+        case .ready:
+            guard let p = l.profile else { return L.t(.newsLearnReady) }
+            return L.t(.newsLearnReady) + (p.newsTitles.isEmpty ? "" : " · " + (L.language == .de ? "Titel" : "titles"))
+                + (p.markers.isEmpty ? "" : " · " + (L.language == .de ? "Erkennung \(p.explained)/\(p.slots)" : "detection \(p.explained)/\(p.slots)"))
+        case .failed: return L.t(.newsLearnFailed)
+        case .learning:
+            if l.learnedSeconds >= NewsLearning.targetSeconds { return L.t(.newsLearnComputing) }
+            let h = String(format: "%.1f", l.learnedSeconds / 3600)
+            return L.f(.newsLearning, L.language == .de ? h.replacingOccurrences(of: ".", with: ",") : h)
+        }
     }
 
     var divider: some View { Theme.border.opacity(0.5).frame(height: 1) }

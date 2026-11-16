@@ -160,3 +160,42 @@ func newsTitleRule(_ t: String, _ expected: Bool) { #expect(NewsLogic.isNewsTitl
     #expect(!NewsWatcher.isNewsStation("https://st02.sslstream.dlf.de/dlf/02/128/mp3/stream.mp3"))  // Kultur
     #expect(!NewsWatcher.isNewsStation("https://st03.sslstream.dlf.de/dlf/03/high/aac/stream.aac?aggregator=web"))  // Nova
 }
+
+// MARK: P8 learned stations
+
+func learnedLogic(_ titles: NewsLogic.Titles) -> (NewsLogic, Clock) {
+    let clock = Clock()
+    var cfg = NewsLogic.Config(); cfg.calendar = clock.cal; cfg.titles = titles; cfg.maxMinutes = 4
+    var l = NewsLogic(config: cfg)
+    _ = l.handle(.setEnabled(true), now: clock.at(11, 50))
+    _ = l.handle(.program(playing: true, isNewsStation: false), now: clock.at(11, 50))
+    _ = l.handle(.title("Song - Artist"), now: clock.at(11, 51))  // baseline
+    return (l, clock)
+}
+
+@Test func learnedTitleStartsAnytimeAndSloganKeepsTheNews() {
+    var (l, c) = learnedLogic(.learned(news: ["ANTENNE BAYERN - Nachrichten"], filler: ["*** Bayern # - Hits"]))
+    // drifting stream: the news title comes at 12:07, far outside the window
+    #expect(l.handle(.title("ANTENNE BAYERN - Nachrichten"), now: c.at(12, 7)) == [.fadeToNews(replaySeconds: 4)])
+    #expect(l.handle(.title("*** Bayern 3 - Hits"), now: c.at(12, 7, 9)) == [])  // slogan with a digit: normalised
+    #expect(l.handle(.title("ANTENNE BAYERN - Wetter"), now: c.at(12, 10)) == [.fadeToProgram])
+}
+
+@Test func learnedFirstTitleJoinsARunningBulletin() {
+    let clock = Clock()
+    var cfg = NewsLogic.Config(); cfg.calendar = clock.cal; cfg.titles = .learned(news: ["*** Nachrichten"], filler: [])
+    var l = NewsLogic(config: cfg)
+    _ = l.handle(.setEnabled(true), now: clock.at(12, 1))
+    _ = l.handle(.program(playing: true, isNewsStation: false), now: clock.at(12, 1))
+    #expect(l.handle(.title("*** Nachrichten"), now: clock.at(12, 2)) == [.fadeToNews(replaySeconds: 0)])
+    // the DLF station name means nothing for a learned station
+    #expect(l.handle(.title("Deutschlandfunk"), now: clock.at(12, 3)) == [.fadeToProgram])
+}
+
+@Test func stationWithoutNewsTitlesIgnoresTitlesAndEndsByLength() {
+    var (l, c) = learnedLogic(.none)
+    #expect(l.handle(.title("Nachrichten"), now: c.at(12, 0, 2)) == [])  // titles never start the news …
+    #expect(l.handle(.tone(secondsAgo: 3), now: c.at(12, 0, 5)) == [.fadeToNews(replaySeconds: 3)])  // … the marker does
+    #expect(l.handle(.title("Song - Artist"), now: c.at(12, 1)) == [])  // … and never end it
+    #expect(l.handle(.tick, now: c.at(12, 4, 6)) == [.fadeToProgram])  // learned length (maxMinutes)
+}

@@ -27,6 +27,8 @@ final class AppSettings: ObservableObject {
     @Published var volume: Double { didSet { d.set(volume, forKey: "volume"); onVolume?(volume) } }
     var onVolume: ((Double) -> Void)?
     @Published var lastStationID: UUID? { didSet { d.set(lastStationID?.uuidString, forKey: "lastStationID") } }
+    /// Learned news station (P8); nil = Deutschlandfunk.
+    @Published var newsStationID: UUID? { didSet { d.set(newsStationID?.uuidString, forKey: "newsStationID") } }
     @Published var launchAtLogin: Bool {
         didSet {
             guard launchAtLogin != (SMAppService.mainApp.status == .enabled) else { return }
@@ -51,6 +53,7 @@ final class AppSettings: ObservableObject {
         volume = v.isFinite && (0...1).contains(v) ? v : 0.8
         language = d.string(forKey: "language").flatMap(Language.init(rawValue:)) ?? .system
         lastStationID = d.string(forKey: "lastStationID").flatMap(UUID.init(uuidString:))
+        newsStationID = d.string(forKey: "newsStationID").flatMap(UUID.init(uuidString:))
         launchAtLogin = SMAppService.mainApp.status == .enabled
         applyLanguage()
     }
@@ -75,6 +78,9 @@ final class AppModel: ObservableObject {
     let directory = RadioBrowser()
     lazy var station = StationPlayer(ring: player.program) { DecoderClient() }
     lazy var news = NewsWatcher(player: player) { DecoderClient() }
+    lazy var learning = NewsLearning(directory: LibraryStore.defaultDirectory) { DecoderClient() }
+    /// Stations Fona learns or learned as news stations (P8).
+    @Published var learned: [LearnedStation] = []
     lazy var updater = AppUpdater(settings: settings)
 
     @Published var library = LibraryData()
@@ -120,12 +126,19 @@ final class AppModel: ObservableObject {
         station.onTitle = { [weak self] t in Task { @MainActor in self?.title = t } }
         news.onActive = { [weak self] on in
             self?.newsActive = on
-            announce(on ? L.t(.newsOnAir) : L.f(.backTo, self?.current?.displayName ?? "Fona"))
+            announce(on ? L.f(.newsOnAir, self?.news.source.name ?? "") : L.f(.backTo, self?.current?.displayName ?? "Fona"))
         }
         news.onSkipped = { [weak self] on in self?.newsSkipped = on }
         news.log = { log.notice("\($0, privacy: .public)"); FileLog.shared.write($0) }
         FileLog.shared.write("start Fona \(version) (\(build))")
         if AppUpdater.translocated { notice = L.t(.moveToApplications) }
+        learning.log = { FileLog.shared.write($0) }
+        learning.onChange = { [weak self] in
+            guard let self else { return }
+            self.learned = self.learning.stations
+            self.applyNewsSettings()
+        }
+        learned = learning.stations
         updater.isPlaying = { [weak self] in self?.isPlaying ?? false }
         updater.start()
         applyNewsSettings()
@@ -413,7 +426,14 @@ final class AppModel: ObservableObject {
 
     func applyNewsSettings() {
         news.configure(halfHours: settings.newsSchedule == .hourlyAndHalf, maxMinutes: settings.newsMaxMinutes)
+        news.configure(source: learned.first { $0.id == settings.newsStationID }?.source ?? .deutschlandfunk)
         news.setEnabled(settings.newsEnabled)
+    }
+
+    func learnNews(_ s: Station) { learning.learn(name: s.displayName, url: s.url) }
+    func forgetNews(_ id: UUID) {
+        if settings.newsStationID == id { settings.newsStationID = nil }
+        learning.remove(id)
     }
 
     func backFromNews() { news.backNow() }

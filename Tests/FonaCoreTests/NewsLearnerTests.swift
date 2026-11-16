@@ -84,3 +84,18 @@ struct NewsLearnerTests {
         bad = p; bad.typicalSeconds = -1; #expect(bad.checked() == nil)
     }
 }
+
+final class Frames: @unchecked Sendable { var got: [(Date, Int)] = [] }
+
+/// The learning chain hands over fingerprints every 30 s, all in one segment while the audio flows.
+@Test func learnSinkEmitsEvery30Seconds() async throws {
+    let sink = LearnSink()
+    let box = Frames()
+    sink.onFrames = { start, fp in box.got.append((start, fp.count)) }
+    let pcm = NewsLearnerTests.noise(65, seed: 5)
+    var i = 0
+    while i < pcm.count { let n = min(96_000, pcm.count - i); try await sink.write(Array(pcm[i..<i + n])); i += n }
+    #expect(box.got.count == 2)
+    #expect(Set(box.got.map(\.0)).count == 1)
+    #expect(box.got.allSatisfy { $0.1 >= Int(30 * Fingerprinter.framesPerSecond) })
+}

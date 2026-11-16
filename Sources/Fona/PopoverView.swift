@@ -65,12 +65,12 @@ struct NewsHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
-                StationLogo(initials: "DLF", size: 48, active: true)  // letters only up here, bars only in the list (user 2026-11-14)
+                StationLogo(initials: model.news.source.learned == nil ? "DLF" : Station(source: .custom, stationuuid: nil, name: model.news.source.name, url: model.news.source.url, countryCode: nil).initials, size: 48, active: true)  // letters only up here, bars only in the list (user 2026-11-14)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(L.language == .de ? "NACHRICHTEN" : "NEWS").font(.system(size: 10, weight: .bold)).tracking(0.4)
                         .foregroundStyle(Theme.bg).padding(.horizontal, 6).padding(.vertical, 2)
                         .background(RoundedRectangle(cornerRadius: 4).fill(Theme.text))
-                    Text(verbatim: "Deutschlandfunk").font(.system(size: 14, weight: .semibold))
+                    Text(verbatim: model.news.source.name).font(.system(size: 14, weight: .semibold))
                 }
                 Spacer(minLength: 0)
                 PlayButton(model: model)
@@ -162,7 +162,7 @@ struct NewsRow: View {
             Image(systemName: "newspaper").font(.system(size: 16)).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(L.t(.newsSwitch)).fontWeight(.semibold)
-                Text(verbatim: model.newsActive || model.newsSkipped ? L.t(.newsNow) : L.f(.newsNext, model.nextNewsTime))
+                Text(verbatim: model.newsActive || model.newsSkipped ? L.t(.newsNow) : L.f(.newsNext, model.news.source.name, model.nextNewsTime))
                     .font(.system(size: 12)).foregroundStyle(Theme.text2)
             }
             Spacer()
@@ -207,7 +207,7 @@ struct StationRow: View {
     var body: some View {
         let isCurrent = model.current?.url == station.url && model.isPlaying
         // during the news the bars sit on the station that is heard (user 2026-11-14)
-        let newsRow = model.newsActive && model.isPlaying && NewsWatcher.isNewsStation(station.url)
+        let newsRow = model.newsActive && model.isPlaying && model.news.isCurrentNewsStation(station.url)
         let bars = model.newsActive ? newsRow : isCurrent
         HStack(spacing: 10) {
             StationLogo(initials: station.initials, active: isCurrent, bars: bars ? model.player : nil)

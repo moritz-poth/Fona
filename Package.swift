@@ -18,6 +18,8 @@ let package = Package(
         // developer tool: decodes a local file through FrameGuard + DecoderCore (compare against ffmpeg)
         .executableTarget(name: "fona-decodecheck", dependencies: ["FonaCore"], path: "Sources/fona-decodecheck"),
         .executableTarget(name: "fona-tonescan", dependencies: ["FonaCore"], path: "Sources/fona-tonescan"),
+        // developer tool: the P8 news learner on local recordings (compare against spikes/newslearn)
+        .executableTarget(name: "fona-newslearn", dependencies: ["FonaCore"], path: "Sources/fona-newslearn"),
         .testTarget(name: "FonaCoreTests", dependencies: ["FonaCore"], path: "Tests/FonaCoreTests"),
     ]
 )

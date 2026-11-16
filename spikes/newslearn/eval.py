@@ -54,12 +54,17 @@ import re
 name = os.path.basename(d.rstrip("/"))
 if name in TRUTH and os.path.exists(os.path.join(d, "titles.log")):
     rx = re.compile(TRUTH[name])
-    truth, last = [], -10**9
+    import datetime as D
+    truth, last, t0 = [], -10**9, {}
     for l in open(os.path.join(d, "titles.log"), errors="replace"):
-        m = re.match(r"\S+ (\d{8}-\d\d)\.mp3 ([\d.]+) StreamTitle='(.*?)';", l)
-        if not m or m.group(1) not in st:
+        m = re.match(r"(\S+) (\d{8}-\d\d)\.mp3 [\d.]+ StreamTitle='(.*?)';", l)
+        if not m or m.group(2) not in st:
             continue
-        p = st[m.group(1)] + int(float(m.group(2)) * FPS)
+        # wall clock, not the logged byte offset: that assumes 128 kbit/s and drifts on 96k streams
+        ts = D.datetime.fromisoformat(m.group(1))
+        hour = D.datetime.strptime(m.group(2), "%Y%m%d-%H")
+        t0.setdefault(m.group(2), ts if m.group(2) == names[0] else hour)  # first file starts at connect, not at :00
+        p = st[m.group(2)] + int((ts - t0[m.group(2)]).total_seconds() * FPS)
         if rx.search(m.group(3).strip()):
             if p - last > 600 * FPS:
                 truth.append(p)

@@ -14,7 +14,6 @@ _edges = np.geomspace(300, 3000, 34)
 _bins = np.fft.rfftfreq(WIN, 1 / SR)
 _band = [np.where((_bins >= _edges[i]) & (_bins < _edges[i + 1]))[0] for i in range(33)]
 _win = np.hanning(WIN).astype(np.float32)
-_pop8 = np.array([bin(i).count("1") for i in range(256)], dtype=np.uint8)
 
 
 def decode(path, start=None, dur=None):
@@ -49,7 +48,7 @@ def fingerprint(pcm):
 
 def popcount(x):
     """bit counts of a uint32 array"""
-    return _pop8[x.view(np.uint8)].reshape(*x.shape, 4).sum(axis=-1)
+    return np.bitwise_count(x)  # numpy ≥ 2.0, ~40× faster than a byte lookup table
 
 
 def file_fp(path, cache_dir):

@@ -46,3 +46,27 @@ print("  test detected:", " ".join(where(hit[k]) for k in test if k in hit))
 print("  test missed:  ", " ".join(where(marks[k]) for k in test if k not in hit))
 if out:
     print("  false:", " ".join(where(i) for i in out))
+
+# ground truth from titles (research only – the learner never sees these rules)
+TRUTH = {"bayern3": r"^\*\*\* Nachrichten$", "hrinfo": r"Nachrichten$", "swr3": r"^SWR3 Nachrichten", "antenne": r"Nachrichten$",
+         "24h": r"^Nachrichten", "weekend": r"^Nachrichten"}
+import re
+name = os.path.basename(d.rstrip("/"))
+if name in TRUTH and os.path.exists(os.path.join(d, "titles.log")):
+    rx = re.compile(TRUTH[name])
+    truth, last = [], -10**9
+    for l in open(os.path.join(d, "titles.log"), errors="replace"):
+        m = re.match(r"\S+ (\d{8}-\d\d)\.mp3 ([\d.]+) StreamTitle='(.*?)';", l)
+        if not m or m.group(1) not in st:
+            continue
+        p = st[m.group(1)] + int(float(m.group(2)) * FPS)
+        if rx.search(m.group(3).strip()):
+            if p - last > 600 * FPS:
+                truth.append(p)
+            last = p
+    ttest = [p for p in truth if names[np.searchsorted(starts, p, side="right") - 1] not in train
+             or (p - starts[np.searchsorted(starts, p, side="right") - 1]) > 3000 * FPS]  # :59 titles belong to the next hour
+    found = [p for p in ttest if any(abs(p - h) < 120 * FPS for h in hit.values())]
+    print(f"TRUTH ({len(truth)} bulletins by title): test bulletins {len(ttest)}, detected {len(found)}")
+    print("  missed:", " ".join(where(p) for p in ttest if p not in found))
+    print("  offsets detection−title (s):", [round((min(hit.values(), key=lambda h: abs(h - p)) - p) / FPS) for p in found])

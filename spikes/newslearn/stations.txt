@@ -1,0 +1,11 @@
+ndrinfo http://icecast.ndr.de/ndr/ndrinfo/live/mp3/128/stream.mp3
+br24 https://dispatcher.rndfnk.com/br/br24/live/mp3/mid
+wdr5 https://wdr-wdr5-live.icecastssl.wdr.de/wdr/wdr5/live/mp3/128/stream.mp3
+swr3 https://liveradio.swr.de/sw282p3/swr3/play.mp3
+hrinfo https://dispatcher.rndfnk.com/hr/hrinfo/live/mp3/high
+mdraktuell http://mdr-284340-0.sslcast.mdr.de/mdr/284340/0/mp3/high/stream.mp3
+antenne https://stream.antenne.de/antenne/stream/mp3
+1live https://wdr-1live-live.icecastssl.wdr.de/wdr/1live/live/mp3/128/stream.mp3
+radioeins https://dispatcher.rndfnk.com/rbb/radioeins/live/mp3/mid
+ndr2 https://icecast.ndr.de/ndr/ndr2/niedersachsen/mp3/128/stream.mp3
+bayern3 https://dispatcher.rndfnk.com/br/br3/live/mp3/mid

@@ -4,7 +4,6 @@ Fona plays internet radio from the menu bar. When the news starts on Deutschland
 - Click the Fona icon in the menu bar (a disc with an F).
 - **All Stations** lists every station of your countries from A to Z; type two letters or more to see only the matches. A click plays it, the star adds it to your **Favourites**.
 - The big button at the top pauses and resumes.
-- The magnifying glass at the bottom next to the book looks up the current song on Spotify, Apple Music, YouTube Music, Amazon Music, Deezer, TIDAL, Qobuz or SoundCloud – Spotify in its app when installed, the others on their website. It looks up the last song for which the station named artist and track – even if the programme name is showing in between. If there has been none on this station yet, Fona tells you.
 
 ## Favourites and Recently Played
 - Drag favourites to sort them. Right-click a station to remove it from the favourites, rename it or remove it. You can also rename the playing station by right-clicking its name at the top.

@@ -88,16 +88,7 @@ final class AppModel: ObservableObject {
     @Published var tab = Tab.favorites
     @Published var current: Station? { didSet { if !Snapshot.requested { NowPlaying.update(self) } } }
     @Published var state: StationPlayer.State = .stopped { didSet { if !Snapshot.requested { NowPlaying.update(self) } } }
-    @Published var title = "" {
-        didSet {
-            if !Snapshot.requested { NowPlaying.update(self) }
-            // the song search keeps the last real song until the next one: many stations alternate the song with
-            // the programme name in their titles (user 2026-11-14)
-            if let t = MusicSearch.track(title, station: current?.displayName) { lastTrack = t }
-        }
-    }
-    /// Last title that named artist and track on the current station (cleared when another station starts).
-    @Published var lastTrack: MusicSearch.Track?
+    @Published var title = "" { didSet { if !Snapshot.requested { NowPlaying.update(self) } } }
     @Published var newsActive = false
     @Published var newsSkipped = false
     var settingsObserver: AnyCancellable?
@@ -178,7 +169,6 @@ final class AppModel: ObservableObject {
         let id = library.upsert(s)
         library.played(id)
         save()
-        if current?.url != s.url { lastTrack = nil }  // pause + play on the same station keeps the last song
         current = library.station(id) ?? s
         settings.lastStationID = id
         title = ""

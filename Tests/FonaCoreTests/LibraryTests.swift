@@ -100,33 +100,3 @@ func liveRadioBrowserSearch() async throws {
     #expect(AlphaMerge(countries: []).keys == [""])
 }
 
-@Test func musicSearchReadsArtistAndTitle() {
-    let want = MusicSearch.Track(artist: "Isabel van Gelder", title: "Heartless")
-    #expect(MusicSearch.track("\"Heartless\" von Isabel van Gelder") == want)   // DLF Kultur style
-    #expect(MusicSearch.track("„Heartless“ by Isabel van Gelder") == want)
-    #expect(MusicSearch.track("Isabel van Gelder - Heartless") == want)
-    #expect(MusicSearch.track("Isabel van Gelder – Heartless")?.query == "Isabel van Gelder - Heartless")
-    #expect(MusicSearch.track("Heartbreak im Wedding von Wanda") == .init(artist: "Wanda", title: "Heartbreak im Wedding"))  // DLF recording 2026-11-14
-    #expect(MusicSearch.track("\"Carneval De Luz\" von U2 - Vier Männer, 50 Jahre und ein neues Album, Christoph Reimann")
-            == .init(artist: "U2", title: "Carneval De Luz"))
-    #expect(MusicSearch.track("Deutschlandfunk - Alles von Relevanz", station: "Deutschlandfunk") == nil)
-    #expect(MusicSearch.track("Jay-Z - 99 Problems")?.artist == "Jay-Z")              // hyphen without spaces stays
-    for none in ["", "radioeins", "Die Sendung mit Musik", " - ", "radioeins - Live", "x - https://evil.example"] {
-        #expect(MusicSearch.track(none, station: "radioeins") == nil, "\(none)")
-    }
-}
-
-@Test func musicSearchKeepsHostileTitlesInsideTheQuery() {
-    let t = MusicSearch.track("AC/DC - Back?In&Black#x/../@evil.com\u{202E}")!
-    for s in MusicSearch.allCases {
-        let web = s.webURL(t, german: true)!
-        #expect(web.scheme == "https" && web.host?.contains("evil") == false)
-        #expect(!web.absoluteString.contains("&Black") && !web.absoluteString.contains("#") && !web.absoluteString.contains("/../"))
-    }
-    let says = MusicSearch.track("Nils Frahm - Says")!
-    #expect(MusicSearch.spotify.appURL(says)?.absoluteString == "spotify://search/Nils%20Frahm%20Says")
-    #expect(MusicSearch.amazonMusic.webURL(says, german: true)?.absoluteString == "https://www.amazon.de/s?k=Nils+Frahm+Says&i=digital-music")
-    #expect(MusicSearch.qobuz.webURL(says, german: true)?.absoluteString == "https://www.qobuz.com/de-de/search/tracks/Nils%20Frahm%20Says")
-    #expect(MusicSearch.amazonMusic.webURL(MusicSearch.track("A+B - C&i=x")!, german: true)?.query == "k=A%2BB+C%26i%3Dx&i=digital-music")
-    #expect(MusicSearch.appleMusic.appURL(t) == nil)
-}
